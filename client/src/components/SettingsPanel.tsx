@@ -84,8 +84,8 @@ export default function SettingsPanel({ config, onSave, onClose }: SettingsPanel
         boxShadow: "0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.08)",
       }}
     >
-      {/* Scrollable body */}
-      <div className="overflow-y-auto flex-1 p-6 space-y-6">
+      {/* Scrollable body — scrollbar hidden */}
+      <div className="no-scrollbar overflow-y-auto flex-1 p-6 space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">
