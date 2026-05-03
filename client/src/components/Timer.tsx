@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { TimerState, SessionType } from "@shared/schema";
 
@@ -11,24 +11,31 @@ interface TimerProps {
 }
 
 const SESSION_GLOW: Record<SessionType, string> = {
-  "work":         "rgba(255,255,255,0.25)",
-  "short-break":  "rgba(130,220,190,0.25)",
-  "long-break":   "rgba(130,170,255,0.22)",
+  "work":         "rgba(255,255,255,0.22)",
+  "short-break":  "rgba(100,210,170,0.22)",
+  "long-break":   "rgba(120,160,240,0.2)",
 };
 
 const SESSION_ARC: Record<SessionType, string> = {
-  "work":         "rgba(255,255,255,0.92)",
-  "short-break":  "rgba(130,220,190,0.85)",
-  "long-break":   "rgba(130,170,255,0.80)",
+  "work":         "rgba(255,255,255,0.9)",
+  "short-break":  "rgba(100,210,170,0.85)",
+  "long-break":   "rgba(120,160,240,0.8)",
 };
 
 export default function Timer({ timeRemaining, totalTime, currentSession, state, className }: TimerProps) {
   const [displayed, setDisplayed] = useState(timeRemaining);
-  useEffect(() => { setDisplayed(timeRemaining); }, [timeRemaining]);
+  const [popKey, setPopKey] = useState(0);
+  const prevTime = useRef(timeRemaining);
 
-  const SIZE = 320;
-  const TRACK_R = 148;    // outer progress ring
-  const INNER_R = 126;    // inner dark sphere radius
+  useEffect(() => {
+    setDisplayed(timeRemaining);
+    if (prevTime.current !== timeRemaining) setPopKey(k => k + 1);
+    prevTime.current = timeRemaining;
+  }, [timeRemaining]);
+
+  const SIZE = 300;
+  const TRACK_R = 140;
+  const INNER_R = 118;
   const STROKE = 1.5;
 
   const circ = 2 * Math.PI * TRACK_R;
@@ -44,38 +51,40 @@ export default function Timer({ timeRemaining, totalTime, currentSession, state,
 
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
-      {/* Ambient glow behind the circle */}
+      {/* Ambient glow blob */}
       <div
         style={{
           position: "absolute",
-          width: SIZE * 0.8,
-          height: SIZE * 0.8,
+          width: SIZE * 0.85,
+          height: SIZE * 0.85,
           borderRadius: "50%",
           background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
-          filter: "blur(40px)",
-          opacity: isRunning ? 1 : 0.4,
-          transition: "opacity 1s ease, background 1s ease",
+          filter: "blur(35px)",
+          opacity: isRunning ? 1 : 0.35,
+          transition: "opacity 1.2s ease, background 1s ease",
           pointerEvents: "none",
         }}
+        className={isRunning ? "animate-glow-pulse" : ""}
       />
 
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ overflow: "visible" }}>
+      <svg
+        width={SIZE}
+        height={SIZE}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        style={{ overflow: "visible" }}
+        className={isRunning ? "" : ""}
+      >
         <defs>
-          {/* Inner sphere gradient */}
-          <radialGradient id="sphere-grad" cx="40%" cy="35%" r="65%">
-            <stop offset="0%"   stopColor="#1c1c28" />
-            <stop offset="100%" stopColor="#050508" />
+          <radialGradient id="sphere-dark" cx="38%" cy="32%" r="70%">
+            <stop offset="0%"   stopColor="#1a1a28" />
+            <stop offset="100%" stopColor="#040408" />
           </radialGradient>
-
-          {/* Rim-light around sphere edge */}
-          <radialGradient id="rim-grad" cx="50%" cy="50%" r="50%">
-            <stop offset="78%" stopColor="transparent" />
+          <radialGradient id="rim-light" cx="50%" cy="50%" r="50%">
+            <stop offset="75%" stopColor="transparent" />
             <stop offset="100%" stopColor={glowColor} />
           </radialGradient>
-
-          {/* Glow filter for progress arc */}
-          <filter id="arc-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+          <filter id="arc-glow">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -83,78 +92,103 @@ export default function Timer({ timeRemaining, totalTime, currentSession, state,
           </filter>
         </defs>
 
-        {/* Outer faint track circle */}
-        <circle
-          cx={SIZE / 2} cy={SIZE / 2} r={TRACK_R}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={STROKE}
+        {/* Track */}
+        <circle cx={SIZE/2} cy={SIZE/2} r={TRACK_R}
+          fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={STROKE}
         />
 
         {/* Progress arc */}
         <circle
-          cx={SIZE / 2} cy={SIZE / 2} r={TRACK_R}
+          cx={SIZE/2} cy={SIZE/2} r={TRACK_R}
           fill="none"
           stroke={arcColor}
-          strokeWidth={STROKE + 0.5}
+          strokeWidth={STROKE + 0.8}
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
-          transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+          transform={`rotate(-90 ${SIZE/2} ${SIZE/2})`}
           filter="url(#arc-glow)"
           style={{ transition: "stroke-dashoffset 1s linear, stroke 0.8s ease" }}
+          className={isRunning ? "animate-ring-pulse" : ""}
         />
 
-        {/* Inner dark sphere */}
-        <circle
-          cx={SIZE / 2} cy={SIZE / 2} r={INNER_R}
-          fill="url(#sphere-grad)"
-        />
+        {/* Inner sphere */}
+        <circle cx={SIZE/2} cy={SIZE/2} r={INNER_R} fill="url(#sphere-dark)" />
+        <circle cx={SIZE/2} cy={SIZE/2} r={INNER_R} fill="url(#rim-light)" style={{ transition: "fill 1s ease" }} />
 
-        {/* Rim light overlay */}
-        <circle
-          cx={SIZE / 2} cy={SIZE / 2} r={INNER_R}
-          fill="url(#rim-grad)"
-          style={{ transition: "fill 1s ease" }}
-        />
-
-        {/* Time text */}
+        {/* Time digits */}
         <text
-          x={SIZE / 2} y={SIZE / 2 - 10}
-          textAnchor="middle"
+          key={`min-${mins}`}
+          x={SIZE/2 - 14}
+          y={SIZE/2 - 6}
+          textAnchor="end"
           dominantBaseline="middle"
           style={{
-            fontFamily: "JetBrains Mono, monospace",
-            fontSize: "58px",
-            fontWeight: 300,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "52px",
+            fontWeight: 200,
             fill: "rgba(255,255,255,0.95)",
-            letterSpacing: "4px",
+            letterSpacing: "2px",
           }}
           data-testid="text-timer-display"
         >
-          {mins}:{secs}
+          {mins}
+        </text>
+
+        {/* Colon — pulses when running */}
+        <text
+          x={SIZE/2}
+          y={SIZE/2 - 9}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "42px",
+            fontWeight: 100,
+            fill: arcColor,
+            opacity: isRunning ? undefined : "0.5",
+          }}
+          className={isRunning ? "animate-ring-pulse" : ""}
+        >
+          :
+        </text>
+
+        <text
+          key={`sec-${secs}`}
+          x={SIZE/2 + 14}
+          y={SIZE/2 - 6}
+          textAnchor="start"
+          dominantBaseline="middle"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "52px",
+            fontWeight: 200,
+            fill: "rgba(255,255,255,0.95)",
+            letterSpacing: "2px",
+          }}
+        >
+          {secs}
         </text>
 
         {/* Session label */}
         <text
-          x={SIZE / 2} y={SIZE / 2 + 38}
+          x={SIZE/2} y={SIZE/2 + 42}
           textAnchor="middle"
           style={{
-            fontFamily: "Inter, sans-serif",
+            fontFamily: "'Rajdhani', sans-serif",
             fontSize: "11px",
-            fontWeight: 400,
-            fill: "rgba(255,255,255,0.35)",
-            letterSpacing: "3px",
-            textTransform: "uppercase",
+            fontWeight: 500,
+            fill: "rgba(255,255,255,0.3)",
+            letterSpacing: "4px",
           }}
         >
           {currentSession === "work" ? "FOCUS" : currentSession === "short-break" ? "SHORT BREAK" : "LONG BREAK"}
         </text>
 
-        {/* State dot */}
+        {/* Running indicator dot */}
         {isRunning && (
-          <circle cx={SIZE / 2} cy={SIZE / 2 + 60} r={3} fill={arcColor} opacity={0.8}>
-            <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite" />
+          <circle cx={SIZE/2} cy={SIZE/2 + 62} r={2.5} fill={arcColor} opacity={0.7}>
+            <animate attributeName="opacity" values="0.7;0.1;0.7" dur="1.8s" repeatCount="indefinite" />
           </circle>
         )}
       </svg>

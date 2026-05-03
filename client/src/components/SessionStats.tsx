@@ -8,50 +8,45 @@ interface SessionStatsProps {
   className?: string;
 }
 
-interface StatItemProps {
-  label: string;
-  value: string;
-  subValue?: string;
-}
-
-function StatItem({ label, value, subValue }: StatItemProps) {
+function StatItem({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div
-      className="flex-1 flex flex-col items-center gap-1 py-4 rounded-xl"
+      className="flex-1 flex flex-col items-center gap-1 py-4 rounded-xl animate-fade-in-up"
       style={{
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       <div
-        className="text-2xl font-mono font-light"
-        style={{ color: "rgba(255,255,255,0.88)" }}
+        className="text-2xl font-light"
+        style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.88)" }}
       >
         {value}
       </div>
-      {subValue && (
-        <div className="text-xs font-mono" style={{ color: "rgba(255,255,255,0.35)" }}>
-          {subValue}
+      {sub && (
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+          {sub}
         </div>
       )}
-      <div className="text-xs tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>
+      <div
+        className="text-xs tracking-[0.22em] uppercase"
+        style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 500, color: "rgba(255,255,255,0.22)" }}
+      >
         {label}
       </div>
     </div>
   );
 }
 
-export default function SessionStats({
-  sessionsCompleted, currentCycle, totalCycles, timeSpentToday, className,
-}: SessionStatsProps) {
+export default function SessionStats({ sessionsCompleted, currentCycle, totalCycles, timeSpentToday, className }: SessionStatsProps) {
   const h = Math.floor(timeSpentToday / 60);
   const m = timeSpentToday % 60;
   const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
 
   return (
-    <div className={cn("flex gap-3", className)}>
+    <div className={cn("flex gap-2.5", className)}>
       <StatItem label="Sessions" value={String(sessionsCompleted)} data-testid="text-sessions-completed" />
-      <StatItem label="Cycle" value={`${currentCycle}`} subValue={`of ${totalCycles}`} data-testid="badge-current-cycle" />
+      <StatItem label="Cycle" value={String(currentCycle)} sub={`/ ${totalCycles}`} data-testid="badge-current-cycle" />
       <StatItem label="Today" value={timeStr} data-testid="text-time-today" />
     </div>
   );
