@@ -331,7 +331,7 @@ export default function PomodoroApp() {
       }} />
 
       {/* ── Header ── */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 animate-fade-in-down"
+      <header className="relative z-10 flex items-center justify-between px-6 py-3 animate-fade-in-down"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         <div>
           <h1 className="text-sm font-semibold tracking-[0.3em] uppercase"
@@ -353,7 +353,7 @@ export default function PomodoroApp() {
       </header>
 
       {/* ── Main ── */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 py-6 gap-7 max-w-lg mx-auto w-full">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 py-2 gap-3 max-w-lg mx-auto w-full">
 
         {/* Session tabs */}
         <div className="flex gap-1 p-1 rounded-full animate-fade-in-down delay-100"
