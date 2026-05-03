@@ -1,16 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
+import { loadHistory, SessionRecord } from "./HistoryList";
 
 interface AnalyticsProps { className?: string; }
 type Period = "daily" | "weekly" | "monthly" | "yearly";
-
-const MOCK: Record<Period, { chart: { name: string; sessions: number }[]; total: number; time: number }> = {
-  daily:   { chart: [{ name: "9am", sessions: 4 },{ name: "11am", sessions: 2 },{ name: "1pm", sessions: 0 },{ name: "3pm", sessions: 6 },{ name: "5pm", sessions: 3 },{ name: "7pm", sessions: 1 }], total: 16, time: 400 },
-  weekly:  { chart: [{ name: "Mon", sessions: 12 },{ name: "Tue", sessions: 8 },{ name: "Wed", sessions: 16 },{ name: "Thu", sessions: 14 },{ name: "Fri", sessions: 10 },{ name: "Sat", sessions: 6 },{ name: "Sun", sessions: 4 }], total: 70, time: 1750 },
-  monthly: { chart: [{ name: "Wk 1", sessions: 45 },{ name: "Wk 2", sessions: 52 },{ name: "Wk 3", sessions: 38 },{ name: "Wk 4", sessions: 41 }], total: 176, time: 4400 },
-  yearly:  { chart: [{ name: "Jan", sessions: 120 },{ name: "Feb", sessions: 110 },{ name: "Mar", sessions: 140 },{ name: "Apr", sessions: 130 },{ name: "May", sessions: 150 },{ name: "Jun", sessions: 135 }], total: 785, time: 19625 },
-};
 
 const fmtTime = (m: number) => { const h = Math.floor(m / 60); return h > 0 ? `${h}h ${m % 60}m` : `${m}m`; };
 
@@ -20,10 +14,99 @@ const GlassPanel = ({ children, className }: { children: React.ReactNode; classN
   </div>
 );
 
+function processAnalytics(records: SessionRecord[], period: Period) {
+  const now = new Date();
+  const msPerDay = 86400000;
+  let filtered: SessionRecord[] = [];
+  
+  if (period === "daily") {
+    const today = now.toISOString().slice(0, 10);
+    filtered = records.filter(r => r.date === today);
+  } else if (period === "weekly") {
+    const weekAgo = new Date(now.getTime() - 7 * msPerDay).toISOString().slice(0, 10);
+    filtered = records.filter(r => r.date >= weekAgo);
+  } else if (period === "monthly") {
+    const monthAgo = new Date(now.getTime() - 30 * msPerDay).toISOString().slice(0, 10);
+    filtered = records.filter(r => r.date >= monthAgo);
+  } else if (period === "yearly") {
+    const yearAgo = new Date(now.getTime() - 365 * msPerDay).toISOString().slice(0, 10);
+    filtered = records.filter(r => r.date >= yearAgo);
+  }
+
+  const workSessions = filtered.filter(r => r.sessionType === "work");
+  const total = workSessions.length;
+  const time = workSessions.reduce((acc, r) => acc + r.durationMins, 0);
+
+  const totalAllTime = filtered.reduce((acc, r) => acc + r.durationMins, 0) || 1;
+  const workPct = Math.round((time / totalAllTime) * 100);
+  const shortBreakTime = filtered.filter(r => r.sessionType === "short-break").reduce((acc, r) => acc + r.durationMins, 0);
+  const shortPct = Math.round((shortBreakTime / totalAllTime) * 100);
+  const longPct = Math.max(0, 100 - workPct - shortPct);
+
+  let chart: { name: string; sessions: number }[] = [];
+  
+  if (period === "daily") {
+    const hours = new Array(24).fill(0);
+    workSessions.forEach(r => {
+      const h = parseInt(r.startTime.split(":")[0]);
+      if (!isNaN(h)) hours[h]++;
+    });
+    const blocks = ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"];
+    chart = blocks.map((name, i) => {
+      const count = hours[i*3] + hours[i*3+1] + hours[i*3+2];
+      return { name, sessions: count };
+    });
+  } else if (period === "weekly") {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const counts = new Array(7).fill(0);
+    workSessions.forEach(r => {
+      const d = new Date(r.date).getDay();
+      counts[d]++;
+    });
+    chart = days.map((name, i) => ({ name, sessions: counts[i] }));
+  } else if (period === "monthly") {
+    const counts = [0, 0, 0, 0];
+    workSessions.forEach(r => {
+      const diff = Math.floor((now.getTime() - new Date(r.date).getTime()) / msPerDay);
+      if (diff < 7) counts[3]++;
+      else if (diff < 14) counts[2]++;
+      else if (diff < 21) counts[1]++;
+      else if (diff < 28) counts[0]++;
+    });
+    chart = [
+      { name: "Wk 1", sessions: counts[0] },
+      { name: "Wk 2", sessions: counts[1] },
+      { name: "Wk 3", sessions: counts[2] },
+      { name: "Wk 4", sessions: counts[3] }
+    ];
+  } else if (period === "yearly") {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const counts = new Array(12).fill(0);
+    workSessions.forEach(r => {
+      const m = new Date(r.date).getMonth();
+      counts[m]++;
+    });
+    chart = months.map((name, i) => ({ name, sessions: counts[i] }));
+  }
+
+  return {
+    chart,
+    total,
+    time,
+    breakdown: [
+      { label: "Focus", pct: workPct, color: "rgba(255,255,255,0.8)" },
+      { label: "Short Break", pct: shortPct, color: "rgba(100,210,170,0.8)" },
+      { label: "Long Break", pct: longPct, color: "rgba(140,175,255,0.8)" }
+    ]
+  };
+}
+
 export default function Analytics({ className }: AnalyticsProps) {
   const [period, setPeriod] = useState<Period>("weekly");
-  const d = MOCK[period];
   const periods: Period[] = ["daily", "weekly", "monthly", "yearly"];
+  
+  const history = useMemo(() => loadHistory(), [period]); // Recalculate on load or period change
+  const d = useMemo(() => processAnalytics(history, period), [history, period]);
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -64,7 +147,7 @@ export default function Analytics({ className }: AnalyticsProps) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={d.chart} barSize={16}>
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)", fontFamily: "'Rajdhani',sans-serif" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.45)", fontFamily: "'Rajdhani',sans-serif" }} axisLine={false} tickLine={false} width={22} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.45)", fontFamily: "'Rajdhani',sans-serif" }} axisLine={false} tickLine={false} width={22} />
               <Tooltip
                 contentStyle={{ background: "rgba(8,8,18,0.97)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, color: "rgba(255,255,255,0.9)", fontSize: 12 }}
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
@@ -80,11 +163,7 @@ export default function Analytics({ className }: AnalyticsProps) {
         <div className="text-xs font-semibold tracking-[0.18em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.55)" }}>
           Session Breakdown
         </div>
-        {[
-          { label: "Focus",       pct: 75, color: "rgba(255,255,255,0.8)" },
-          { label: "Short Break", pct: 20, color: "rgba(100,210,170,0.8)" },
-          { label: "Long Break",  pct: 5,  color: "rgba(140,175,255,0.8)" },
-        ].map(({ label, pct, color }) => (
+        {d.breakdown.map(({ label, pct, color }) => (
           <div key={label} className="space-y-2">
             <div className="flex justify-between text-xs font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>
               <span style={{ fontFamily: "'Space Grotesk',sans-serif" }}>{label}</span>
