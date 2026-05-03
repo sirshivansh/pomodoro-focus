@@ -8,93 +8,85 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// Storage interface for Pomodoro app data
 export interface IStorage {
-  // Sessions
   getPomodoroSession(id: string): Promise<PomodoroSession | undefined>;
   getAllSessions(): Promise<PomodoroSession[]>;
   createSession(session: InsertPomodoroSession): Promise<PomodoroSession>;
   updateSession(id: string, updates: Partial<PomodoroSession>): Promise<PomodoroSession | undefined>;
-  
-  // Settings
   getSettings(): Promise<PomodoroSettings | undefined>;
   createSettings(settings: InsertPomodoroSettings): Promise<PomodoroSettings>;
   updateSettings(updates: Partial<PomodoroSettings>): Promise<PomodoroSettings | undefined>;
-  
-  // Streaks
   getStreakData(): Promise<StreakData | undefined>;
   createStreakData(streak: InsertStreakData): Promise<StreakData>;
   updateStreakData(updates: Partial<StreakData>): Promise<StreakData | undefined>;
 }
 
 export class MemStorage implements IStorage {
-  private sessions: Map<string, PomodoroSession>;
+  private sessions: Map<string, PomodoroSession> = new Map();
   private settings: PomodoroSettings | undefined;
-  private streakData: StreakData | undefined;
+  private streak: StreakData | undefined;
 
-  constructor() {
-    this.sessions = new Map();
-  }
+  async getPomodoroSession(id: string) { return this.sessions.get(id); }
+  async getAllSessions() { return Array.from(this.sessions.values()); }
 
-  // Session methods
-  async getPomodoroSession(id: string): Promise<PomodoroSession | undefined> {
-    return this.sessions.get(id);
-  }
-
-  async getAllSessions(): Promise<PomodoroSession[]> {
-    return Array.from(this.sessions.values());
-  }
-
-  async createSession(insertSession: InsertPomodoroSession): Promise<PomodoroSession> {
-    const id = randomUUID();
-    const session: PomodoroSession = { ...insertSession, id, endTime: null };
-    this.sessions.set(id, session);
+  async createSession(data: InsertPomodoroSession): Promise<PomodoroSession> {
+    const session: PomodoroSession = {
+      id: randomUUID(),
+      type: data.type,
+      duration: data.duration,
+      completed: data.completed ?? false,
+      startTime: data.startTime,
+      endTime: null,
+    };
+    this.sessions.set(session.id, session);
     return session;
   }
 
-  async updateSession(id: string, updates: Partial<PomodoroSession>): Promise<PomodoroSession | undefined> {
+  async updateSession(id: string, updates: Partial<PomodoroSession>) {
     const session = this.sessions.get(id);
     if (!session) return undefined;
-    
-    const updatedSession = { ...session, ...updates };
-    this.sessions.set(id, updatedSession);
-    return updatedSession;
+    const updated = { ...session, ...updates };
+    this.sessions.set(id, updated);
+    return updated;
   }
 
-  // Settings methods
-  async getSettings(): Promise<PomodoroSettings | undefined> {
+  async getSettings() { return this.settings; }
+
+  async createSettings(data: InsertPomodoroSettings): Promise<PomodoroSettings> {
+    this.settings = {
+      id: randomUUID(),
+      workDuration: data.workDuration ?? 1500,
+      shortBreakDuration: data.shortBreakDuration ?? 300,
+      longBreakDuration: data.longBreakDuration ?? 900,
+      sessionsUntilLongBreak: data.sessionsUntilLongBreak ?? 4,
+      soundEnabled: data.soundEnabled ?? true,
+    };
     return this.settings;
   }
 
-  async createSettings(insertSettings: InsertPomodoroSettings): Promise<PomodoroSettings> {
-    const id = randomUUID();
-    this.settings = { ...insertSettings, id };
-    return this.settings;
-  }
-
-  async updateSettings(updates: Partial<PomodoroSettings>): Promise<PomodoroSettings | undefined> {
+  async updateSettings(updates: Partial<PomodoroSettings>) {
     if (!this.settings) return undefined;
-    
     this.settings = { ...this.settings, ...updates };
     return this.settings;
   }
 
-  // Streak methods
-  async getStreakData(): Promise<StreakData | undefined> {
-    return this.streakData;
+  async getStreakData() { return this.streak; }
+
+  async createStreakData(data: InsertStreakData): Promise<StreakData> {
+    this.streak = {
+      id: randomUUID(),
+      currentStreak: data.currentStreak ?? 0,
+      longestStreak: data.longestStreak ?? 0,
+      lastSessionDate: data.lastSessionDate ?? null,
+      totalSessions: data.totalSessions ?? 0,
+    };
+    return this.streak;
   }
 
-  async createStreakData(insertStreak: InsertStreakData): Promise<StreakData> {
-    const id = randomUUID();
-    this.streakData = { ...insertStreak, id };
-    return this.streakData;
-  }
-
-  async updateStreakData(updates: Partial<StreakData>): Promise<StreakData | undefined> {
-    if (!this.streakData) return undefined;
-    
-    this.streakData = { ...this.streakData, ...updates };
-    return this.streakData;
+  async updateStreakData(updates: Partial<StreakData>) {
+    if (!this.streak) return undefined;
+    this.streak = { ...this.streak, ...updates };
+    return this.streak;
   }
 }
 

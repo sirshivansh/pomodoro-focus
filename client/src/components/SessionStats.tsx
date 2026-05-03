@@ -62,7 +62,7 @@ export default function SessionStats({
             <div className="flex items-center justify-center mb-2">
               <Clock className="w-5 h-5 text-chart-3" />
             </div>
-            <div className="text-2xl font-bold" data-testid="text-time-today">
+            <div className="text-xl font-bold whitespace-nowrap" data-testid="text-time-today">
               {formatTime(timeSpentToday)}
             </div>
             <div className="text-xs text-muted-foreground">
