@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PomoFocusTrack — Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'space': ['"Space Grotesk"', 'sans-serif'],
+                        'raj': ['"Rajdhani"', 'sans-serif'],
+                    },
+                    colors: {
+                        surface: {
+                            950: '#0a0a0a',
+                            900: '#111111',
+                            850: '#161616',
+                            800: '#1a1a1a',
+                            750: '#1e1e1e',
+                            700: '#222222',
+                            600: '#2a2a2a',
+                            500: '#333333',
+                        },
+                        accent: {
+                            400: '#f59e0b',
+                            500: '#d97706',
+                            600: '#b45309',
+                        },
+                        ember: {
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Grain overlay */
+        .grain::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Glow effects */
+        .glow-amber {
+            box-shadow: 0 0 40px -10px rgba(245, 158, 11, 0.25), 0 0 80px -20px rgba(245, 158, 11, 0.1);
+        }
+
+        .glow-amber-lg {
+            box-shadow: 0 0 60px -15px rgba(245, 158, 11, 0.3), 0 0 120px -30px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Glass card */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+        }
+
+        .glass-hover:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Gradient text */
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f59e0b 50%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-subtle {
+            background: linear-gradient(135deg, #ffffff 30%, rgba(255, 255, 255, 0.6) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Animated border gradient */
+        .border-glow {
+            position: relative;
+        }
+
+        .border-glow::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), transparent 50%, rgba(249, 115, 22, 0.2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* Sidebar */
+        .sidebar-link {
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            color: #f59e0b;
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        /* Screenshot container */
+        .screenshot-wrap {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .screenshot-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        .screenshot-wrap img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+        }
+
+        /* Code block */
+        .code-block {
+            background: #111111;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .code-block .code-header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .code-block pre {
+            padding: 16px 20px;
+            overflow-x: auto;
+            color: #d4d4d4;
+        }
+
+        .code-block .keyword {
+            color: #c084fc;
+        }
+
+        .code-block .string {
+            color: #34d399;
+        }
+
+        .code-block .comment {
+            color: #525252;
+            font-style: italic;
+        }
+
+        .code-block .func {
+            color: #60a5fa;
+        }
+
+        .code-block .type {
+            color: #f59e0b;
+        }
+
+        .code-block .number {
+            color: #fb923c;
+        }
+
+        /* Feature card animation */
+        .feature-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Tech badge */
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .tech-badge:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Section reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* TOC progress bar */
+        #toc-progress {
+            transition: height 0.15s ease;
+        }
+
+        /* Mobile sidebar */
+        .mobile-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mobile-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mobile-sidebar.open {
+            transform: translateX(0);
+        }
+
+        /* Decorative orb */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        /* Copy button */
+        .copy-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .code-block:hover .copy-btn {
+            opacity: 1;
+        }
+
+        /* Keyboard shortcut key */
+        kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 26px;
+            padding: 0 8px;
+            border-radius: 6px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom-width: 2px;
+            color: #d4d4d4;
+        }
+
+        /* Timeline connector */
+        .timeline-line {
+            position: absolute;
+            left: 15px;
+            top: 36px;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, rgba(245, 158, 11, 0.3), transparent);
+        }
+    </style>
+</head>
+
+<body class="grain">
+
+    <!-- Decorative Background Orbs -->
+    <div class="orb" style="width:600px;height:600px;top:-200px;right:-200px;background:rgba(245,158,11,0.04);"></div>
+    <div class="orb" style="width:500px;height:500px;bottom:20%;left:-150px;background:rgba(249,115,22,0.03);"></div>
+    <div class="orb" style="width:400px;height:400px;top:50%;right:10%;background:rgba(245,158,11,0.02);"></div>
+
+    <!-- Mobile Header -->
+    <header class="lg:hidden fixed top-0 left-0 right-0 z-50 px-4 py-3"
+        style="background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div class="flex items-center justify-between">
+            <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-white/5 transition-colors">
+                <iconify-icon icon="solar:hamburger-menu-bold-duotone" width="22" class="text-white/70"></iconify-icon>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center"
+                    style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                    <iconify-icon icon="solar:timer-bold" width="15" class="text-white"></iconify-icon>
+                </div>
+                <span class="font-raj font-semibold text-sm tracking-wider">POMOFOCUS</span>
+            </div>
+            <a href="#getting-started" class="text-xs font-medium text-accent-400">Docs</a>
+        </div>
+    </header>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay fixed inset-0 z-50 bg-black/60 lg:hidden"
+        onclick="closeMobileSidebar()"></div>
+
+    <!-- Mobile Sidebar -->
+    <nav id="mobile-sidebar" class="mobile-sidebar fixed top-0 left-0 bottom-0 z-50 w-72 overflow-y-auto lg:hidden"
+        style="background:#111111;border-right:1px solid rgba(255,255,255,0.06);">
+        <div class="p-5">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                        <iconify-icon icon="solar:timer-bold" width="17" class="text-white"></iconify-icon>
+                    </div>
+                    <span class="font-raj font-bold text-base tracking-wider">POMOFOCUS</span>
+                </div>
+                <button onclick="closeMobileSidebar()" class="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                    <iconify-icon icon="solar:close-circle-bold-duotone" width="20"
+                        class="text-white/50"></iconify-icon>
+                </button>
+            </div>
+            <div id="mobile-nav-links"></div>
+        </div>
+    </nav>
+
+    <!-- Desktop Sidebar -->
+    <aside class="hidden lg:flex fixed top-0 left-0 bottom-0 w-64 flex-col z-40"
+        style="background:rgba(17,17,17,0.6);backdrop-filter:blur(16px);border-right:1px solid rgba(255,255,255,0.05);">
+        <div class="p-6 pb-4">
+            <div class="flex items-center gap-2.5 mb-1">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center glow-amber"
+                    style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                    <iconify-icon icon="solar:timer-bold" width="17" class="text-white"></iconify-icon>
+                </div>
+                <span class="font-raj font-bold text-base tracking-wider">POMOFOCUS</span>
+            </div>
+            <p class="text-[11px] text-white/30 ml-[42px] -mt-0.5 font-medium tracking-wide">DOCS v1.0</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-3 pb-6">
+            <p class="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-white/25 uppercase">Overview</p>
+            <a href="#hero"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Introduction</a>
+            <a href="#features"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Features</a>
+            <a href="#screenshots"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Screenshots</a>
+
+            <p class="px-3 mt-5 mb-2 text-[10px] font-semibold tracking-[0.15em] text-white/25 uppercase">Developer
+                Guide</p>
+            <a href="#tech-stack" class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Tech
+                Stack</a>
+            <a href="#architecture"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Architecture</a>
+            <a href="#getting-started"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Getting Started</a>
+            <a href="#api-reference" class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">API
+                Reference</a>
+
+            <p class="px-3 mt-5 mb-2 text-[10px] font-semibold tracking-[0.15em] text-white/25 uppercase">Appendix</p>
+            <a href="#keyboard-shortcuts"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Keyboard Shortcuts</a>
+            <a href="#changelog"
+                class="sidebar-link block px-3 py-2 text-sm text-white/60 rounded-r-lg mb-0.5">Changelog</a>
+        </div>
+
+        <!-- TOC Progress Indicator -->
+        <div class="px-6 py-4" style="border-top:1px solid rgba(255,255,255,0.05);">
+            <div class="flex items-center gap-2 text-[11px] text-white/30">
+                <div class="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div id="toc-progress" class="h-full rounded-full bg-accent-500" style="height:0%;width:100%;">
+                    </div>
+                </div>
+                <span id="toc-percent">0%</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 pt-14 lg:pt-0">
+        <div class="max-w-4xl mx-auto px-5 sm:px-8 lg:px-12 py-12 lg:py-16">
+
+            <!-- Hero Section -->
+            <section id="hero" class="reveal mb-20">
+                <div class="flex items-center gap-2 mb-6">
+                    <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide uppercase"
+                        style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.15);">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse"></span>
+                        Production Ready
+                    </span>
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium tracking-wide text-white/40"
+                        style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+                        v1.0.0
+                    </span>
+                </div>
+
+                <h1 class="font-raj font-bold text-4xl sm:text-5xl lg:text-6xl leading-[1.05] tracking-tight mb-5">
+                    <span class="text-gradient-subtle">PomoFocus</span><span class="text-gradient">Track</span>
+                </h1>
+
+                <p class="text-lg sm:text-xl text-white/50 leading-relaxed max-w-2xl mb-8">
+                    A production-grade, cloud-synchronized Pomodoro productivity suite. Built with an agency-grade
+                    design philosophy for users who demand both beauty and reliability.
+                </p>
+
+                <div class="flex flex-wrap gap-3">
+                    <a href="#getting-started"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-[1.02] glow-amber"
+                        style="background:linear-gradient(135deg,#d97706,#b45309);color:#fff;">
+                        <iconify-icon icon="solar:rocket-bold" width="16"></iconify-icon>
+                        Quick Start
+                    </a>
+                    <a href="#tech-stack"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 hover:text-white hover:bg-white/5"
+                        style="border:1px solid rgba(255,255,255,0.1);">
+                        <iconify-icon icon="solar:code-bold-duotone" width="16"></iconify-icon>
+                        View Stack
+                    </a>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:star-bold-duotone" width="17" class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Standout Features</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">What makes PomoFocusTrack different from a simple timer.</p>
+
+                <div class="space-y-4">
+                    <!-- Feature 1 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(96,165,250,0.1);">
+                                <iconify-icon icon="solar:cloud-bold-duotone" width="20"
+                                    class="text-blue-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Secure Cloud Synchronization</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Powered by Passport.js and secure
+                                    cookie-based sessions. Every completed Pomodoro cycle is instantly synced to a
+                                    serverless PostgreSQL database. Log in on any device and see your updated focus
+                                    history and streaks — no more localStorage lock-in.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(52,211,153,0.1);">
+                                <iconify-icon icon="solar:chart-bold-duotone" width="20"
+                                    class="text-emerald-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Dynamic Productivity Analytics</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">A GitHub-style weekly heatmap
+                                    visualizes focus intensity with dynamic color saturation. An intelligent streak
+                                    algorithm calculates "Current" and "Best" daily focus streaks to incentivize
+                                    long-term habits.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(245,158,11,0.1);">
+                                <iconify-icon icon="solar:cup-star-bold-duotone" width="20"
+                                    class="text-accent-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Gamified Achievement System</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Tiered achievement badges — Novice,
+                                    Scholar, Deep Work Master — unlock as users accumulate focus minutes. Badges trigger
+                                    an immersive glowing pop-up animation to reward milestone moments.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(192,132,252,0.1);">
+                                <iconify-icon icon="solar:pallete-2-bold-duotone" width="20"
+                                    class="text-purple-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Agency-Grade UI/UX Design</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Custom "Neo-Earthen" dark theme with
+                                    complex radial gradients, futuristic typography (Space Grotesk & Rajdhani),
+                                    glassmorphism effects, and fluid layout transitions orchestrated by Framer Motion.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Features Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                    <div class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="18"
+                            class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Customizable Timer</p>
+                            <p class="text-xs text-white/35 mt-0.5">Adjust Work, Short Break, Long Break, and cycle
+                                count.</p>
+                        </div>
+                    </div>
+                    <div class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors">
+                        <iconify-icon icon="solar:play-circle-bold-duotone" width="18"
+                            class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Auto-Progression</p>
+                            <p class="text-xs text-white/35 mt-0.5">Seamless Focus → Break → Focus transitions.</p>
+                        </div>
+                    </div>
+                    <div class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors">
+                        <iconify-icon icon="solar:volume-loud-bold-duotone" width="18"
+                            class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Hardware Audio</p>
+                            <p class="text-xs text-white/35 mt-0.5">Web Audio API sine-wave chimes + Push Notifications.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors">
+                        <iconify-icon icon="solar:keyboard-bold-duotone" width="18"
+                            class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Keyboard Shortcuts</p>
+                            <p class="text-xs text-white/35 mt-0.5">Power-user hotkeys for pause, skip, and reset.</p>
+                        </div>
+                    </div>
+                    <div
+                        class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors sm:col-span-2">
+                        <iconify-icon icon="solar:chat-round-like-bold-duotone" width="18"
+                            class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Motivational Quote Engine</p>
+                            <p class="text-xs text-white/35 mt-0.5">Rotating, context-aware productivity quotes during
+                                active focus sessions.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screenshots Section -->
+            <section id="screenshots" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:gallery-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">App Screenshots</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">A visual walkthrough of the PomoFocusTrack experience.</p>
+
+                <div class="space-y-8">
+                    <!-- Screenshot 1: Login -->
+                    <div class="reveal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="text-[11px] font-semibold tracking-[0.12em] uppercase text-accent-400">01</span>
+                            <span class="w-8 h-px bg-white/10"></span>
+                            <span class="text-sm text-white/50">Authentication</span>
+                        </div>
+                        <div class="screenshot-wrap glow-amber">
+                            <img src="https://z-cdn-media.chatglm.cn/files/ea803a47-535d-4b48-8917-0521fc5914af.png?auth_key=1877834290-56974753829843639ea13bcb6a2f429d-0-7c63af0ba9cf658b1bd878e4d4fca9a4"
+                                alt="Login Page" loading="lazy">
+                        </div>
+                        <p class="text-xs text-white/30 mt-2.5">Split-screen login with branded hero panel and secure
+                            credential form.</p>
+                    </div>
+
+                    <!-- Screenshot 2: Timer -->
+                    <div class="reveal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="text-[11px] font-semibold tracking-[0.12em] uppercase text-accent-400">02</span>
+                            <span class="w-8 h-px bg-white/10"></span>
+                            <span class="text-sm text-white/50">Focus Timer</span>
+                        </div>
+                        <div class="screenshot-wrap glow-amber">
+                            <img src="https://z-cdn-media.chatglm.cn/files/135f6a81-076a-484a-a567-b6ac9c1fad91.png?auth_key=1877834290-ebc10270c514412ea0ff0c1e0c53e53f-0-c270fc552f324f4fc72cf10e249ca857"
+                                alt="Focus Timer" loading="lazy">
+                        </div>
+                        <p class="text-xs text-white/30 mt-2.5">Central timer with mode tabs, cycle tracker, and
+                            motivational quotes.</p>
+                    </div>
+
+                    <!-- Screenshot 3: Progress -->
+                    <div class="reveal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="text-[11px] font-semibold tracking-[0.12em] uppercase text-accent-400">03</span>
+                            <span class="w-8 h-px bg-white/10"></span>
+                            <span class="text-sm text-white/50">Progress & Achievements</span>
+                        </div>
+                        <div class="screenshot-wrap glow-amber">
+                            <img src="https://z-cdn-media.chatglm.cn/files/46836a06-45d3-403d-bc10-0caef93f77b1.png?auth_key=1877834290-0171166c21924389b2afd24750326106-0-c8765b67484e57c4b3148c45fa4db041"
+                                alt="Progress Panel" loading="lazy">
+                        </div>
+                        <p class="text-xs text-white/30 mt-2.5">Weekly activity heatmap, streak tracking, daily goals,
+                            and gamified badge system.</p>
+                    </div>
+
+                    <!-- Screenshot 4: Settings -->
+                    <div class="reveal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="text-[11px] font-semibold tracking-[0.12em] uppercase text-accent-400">04</span>
+                            <span class="w-8 h-px bg-white/10"></span>
+                            <span class="text-sm text-white/50">Settings</span>
+                        </div>
+                        <div class="screenshot-wrap glow-amber">
+                            <img src="https://z-cdn-media.chatglm.cn/files/43363101-be97-47fc-a2f9-3f2daaa197ce.png?auth_key=1877834290-a414dfceb3c84f999b166fac9dcdfcfa-0-6e2b2773d35f22f8c5fcee7c8b32c3f5"
+                                alt="Settings" loading="lazy">
+                        </div>
+                        <p class="text-xs text-white/30 mt-2.5">Full timer configuration, sound toggles, auto-start, and
+                            browser notification controls.</p>
+                    </div>
+
+                    <!-- Screenshot 5: Analytics -->
+                    <div class="reveal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="text-[11px] font-semibold tracking-[0.12em] uppercase text-accent-400">05</span>
+                            <span class="w-8 h-px bg-white/10"></span>
+                            <span class="text-sm text-white/50">Analytics Dashboard</span>
+                        </div>
+                        <div class="screenshot-wrap glow-amber">
+                            <img src="https://z-cdn-media.chatglm.cn/files/0f60f962-b01c-4953-b1aa-486cff8a1bd5.png?auth_key=1877834290-bf27de64dbf24671b7c878fd87cf357a-0-7721d5f81ed0a11a2f4b9c5f824e5de6"
+                                alt="Analytics" loading="lazy">
+                        </div>
+                        <p class="text-xs text-white/30 mt-2.5">Detailed session breakdown with pie charts and weekly
+                            distribution graphs.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tech Stack Section -->
+            <section id="tech-stack" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:layers-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Technology Stack</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">A carefully selected, modern toolchain for optimal developer
+                    experience and production performance.</p>
+
+                <!-- Frontend -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-2.5 mb-4">
+                        <iconify-icon icon="solar:monitor-bold-duotone" width="18" class="text-blue-400"></iconify-icon>
+                        <h3 class="font-raj font-semibold text-lg tracking-wide text-white/90">Frontend</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:react" width="14"
+                                class="text-cyan-400"></iconify-icon> React 18</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:vite" width="14"
+                                class="text-purple-400"></iconify-icon> Vite</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:tanstackquery" width="14"
+                                class="text-red-400"></iconify-icon> TanStack Query</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:tailwindcss" width="14"
+                                class="text-sky-400"></iconify-icon> Tailwind CSS</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:shadcnui" width="14"
+                                class="text-white/70"></iconify-icon> shadcn/ui</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:magic-stick-3-bold" width="14"
+                                class="text-pink-400"></iconify-icon> Framer Motion</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:routing-bold" width="14"
+                                class="text-orange-400"></iconify-icon> Wouter</span>
+                    </div>
+                </div>
+
+                <!-- Backend -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-2.5 mb-4">
+                        <iconify-icon icon="solar:server-bold-duotone" width="18"
+                            class="text-emerald-400"></iconify-icon>
+                        <h3 class="font-raj font-semibold text-lg tracking-wide text-white/90">Backend</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:nodedotjs" width="14"
+                                class="text-green-400"></iconify-icon> Node.js</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:express" width="14"
+                                class="text-white/70"></iconify-icon> Express.js</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:shield-keyhole-bold" width="14"
+                                class="text-amber-400"></iconify-icon> Passport.js</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:lock-bold" width="14"
+                                class="text-yellow-400"></iconify-icon> scrypt</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:database-bold" width="14"
+                                class="text-teal-400"></iconify-icon> express-session</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:verified-check-bold" width="14"
+                                class="text-blue-400"></iconify-icon> Zod</span>
+                    </div>
+                </div>
+
+                <!-- Database & Infra -->
+                <div>
+                    <div class="flex items-center gap-2.5 mb-4">
+                        <iconify-icon icon="solar:cloud-storage-bold-duotone" width="18"
+                            class="text-accent-400"></iconify-icon>
+                        <h3 class="font-raj font-semibold text-lg tracking-wide text-white/90">Database & Infrastructure
+                        </h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:neon" width="14"
+                                class="text-green-300"></iconify-icon> Neon PostgreSQL</span>
+                        <span class="tech-badge"><iconify-icon icon="solar:database-bold" width="14"
+                                class="text-orange-400"></iconify-icon> Drizzle ORM</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:esbuild" width="14"
+                                class="text-pink-400"></iconify-icon> esbuild</span>
+                        <span class="tech-badge"><iconify-icon icon="simple-icons:render" width="14"
+                                class="text-emerald-400"></iconify-icon> Render / Railway</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture Section -->
+            <section id="architecture" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:widget-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Architecture</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">How the pieces fit together.</p>
+
+                <!-- Architecture Diagram -->
+                <div class="glass border-glow rounded-xl p-6 sm:p-8 mb-6">
+                    <div class="flex flex-col items-center gap-4">
+                        <!-- Client -->
+                        <div class="w-full max-w-md glass rounded-lg p-4 text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <iconify-icon icon="solar:monitor-bold-duotone" width="18"
+                                    class="text-blue-400"></iconify-icon>
+                                <span class="font-raj font-semibold text-sm tracking-wide">REACT CLIENT</span>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-1.5">
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">Vite</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">TanStack
+                                    Query</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">Framer
+                                    Motion</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">Tailwind</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-1">
+                            <iconify-icon icon="solar:arrow-down-bold" width="16" class="text-white/20"></iconify-icon>
+                            <span class="text-[10px] text-white/20 font-medium">REST API + Sessions</span>
+                        </div>
+
+                        <!-- Server -->
+                        <div class="w-full max-w-md glass rounded-lg p-4 text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <iconify-icon icon="solar:server-bold-duotone" width="18"
+                                    class="text-emerald-400"></iconify-icon>
+                                <span class="font-raj font-semibold text-sm tracking-wide">EXPRESS API SERVER</span>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-1.5">
+                                <span
+                                    class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">Passport.js</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">Zod
+                                    Validation</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">scrypt
+                                    Hashing</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-white/40">esbuild
+                                    Bundle</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center gap-1">
+                            <iconify-icon icon="solar:arrow-down-bold" width="16" class="text-white/20"></iconify-icon>
+                            <span class="text-[10px] text-white/20 font-medium">Drizzle ORM Queries</span>
+                        </div>
+
+                        <!-- Database -->
+                        <div class="w-full max-w-md rounded-lg p-4 text-center"
+                            style="background:linear-gradient(135deg, rgba(245,158,11,0.08), rgba(249,115,22,0.05));border:1px solid rgba(245,158,11,0.15);">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <iconify-icon icon="simple-icons:neon" width="18" class="text-green-300"></iconify-icon>
+                                <span class="font-raj font-semibold text-sm tracking-wide text-accent-400">NEON
+                                    POSTGRESQL</span>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-1.5">
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-accent-500/10 text-accent-400/60">Users
+                                    Table</span>
+                                <span
+                                    class="text-[10px] px-2 py-0.5 rounded bg-accent-500/10 text-accent-400/60">Sessions
+                                    Table</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-accent-500/10 text-accent-400/60">Focus
+                                    Sessions</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Flow Description -->
+                <div class="space-y-4">
+                    <div class="relative pl-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center"
+                            style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);">
+                            <span class="text-[10px] font-bold text-blue-400">1</span>
+                        </div>
+                        <p class="text-sm text-white/60 leading-relaxed"><span class="text-white/80 font-medium">User
+                                authenticates</span> via Passport.js Local Strategy. Password is hashed with <code
+                                class="text-xs px-1.5 py-0.5 rounded bg-white/5 text-accent-400">scrypt</code> and
+                            verified against the database.</p>
+                    </div>
+                    <div class="relative pl-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center"
+                            style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);">
+                            <span class="text-[10px] font-bold text-emerald-400">2</span>
+                        </div>
+                        <p class="text-sm text-white/60 leading-relaxed">Session cookie is stored in PostgreSQL via
+                            <code
+                                class="text-xs px-1.5 py-0.5 rounded bg-white/5 text-accent-400">connect-pg-simple</code>,
+                            enabling server-side session validation on every request.</p>
+                    </div>
+                    <div class="relative pl-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center"
+                            style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);">
+                            <span class="text-[10px] font-bold text-accent-400">3</span>
+                        </div>
+                        <p class="text-sm text-white/60 leading-relaxed">Timer completes a focus session → React Query
+                            mutation sends validated payload (Zod) → Express route inserts record via Drizzle ORM.</p>
+                    </div>
+                    <div class="relative pl-10">
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center"
+                            style="background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.2);">
+                            <span class="text-[10px] font-bold text-purple-400">4</span>
+                        </div>
+                        <p class="text-sm text-white/60 leading-relaxed">Analytics and streak data are <span
+                                class="text-white/80 font-medium">computed server-side</span> via SQL aggregation
+                            queries and returned to the client for rendering in the heatmap and chart components.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Getting Started Section -->
+            <section id="getting-started" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:rocket-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Getting Started</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">Set up your local development environment in minutes.</p>
+
+                <!-- Prerequisites -->
+                <div class="glass rounded-xl p-5 mb-6">
+                    <h4 class="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
+                        <iconify-icon icon="solar:checklist-bold" width="16" class="text-accent-400"></iconify-icon>
+                        Prerequisites
+                    </h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-start gap-2.5 text-sm text-white/50">
+                            <iconify-icon icon="solar:check-circle-bold" width="16"
+                                class="text-emerald-500/70 mt-0.5 flex-shrink-0"></iconify-icon>
+                            Node.js 18+ and npm / pnpm
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm text-white/50">
+                            <iconify-icon icon="solar:check-circle-bold" width="16"
+                                class="text-emerald-500/70 mt-0.5 flex-shrink-0"></iconify-icon>
+                            A Neon PostgreSQL database (free tier available)
+                        </li>
+                        <li class="flex items-start gap-2.5 text-sm text-white/50">
+                            <iconify-icon icon="solar:check-circle-bold" width="16"
+                                class="text-emerald-500/70 mt-0.5 flex-shrink-0"></iconify-icon>
+                            Git for version control
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Step 1 -->
+                <div class="mb-5">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold"
+                            style="background:rgba(245,158,11,0.15);color:#f59e0b;">1</span>
+                        <h4 class="text-sm font-semibold text-white/80">Clone & Install</h4>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="text-[11px] text-white/30 font-medium">terminal</span>
+                            <button
+                                class="copy-btn text-[11px] text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors"
+                                onclick="copyCode(this)">
+                                <iconify-icon icon="solar:copy-bold" width="13"></iconify-icon>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code><span class="comment"># Clone the repository</span>
+<span class="func">git</span> clone https://github.com/your-username/pomofocustrack.git
+<span class="func">cd</span> pomofocustrack
+
+<span class="comment"># Install dependencies</span>
+<span class="func">npm</span> install</code></pre>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="mb-5">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold"
+                            style="background:rgba(245,158,11,0.15);color:#f59e0b;">2</span>
+                        <h4 class="text-sm font-semibold text-white/80">Configure Environment</h4>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="text-[11px] text-white/30 font-medium">.env</span>
+                            <button
+                                class="copy-btn text-[11px] text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors"
+                                onclick="copyCode(this)">
+                                <iconify-icon icon="solar:copy-bold" width="13"></iconify-icon>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code><span class="comment"># Database</span>
+<span class="type">DATABASE_URL</span>=<span class="string">postgresql://user:pass@ep-xxx.region.neon.tech/dbname?sslmode=require</span>
+
+<span class="comment"># Session Secret (generate a strong random string)</span>
+<span class="type">SESSION_SECRET</span>=<span class="string">your-super-secret-session-key</span>
+
+<span class="comment"># App</span>
+<span class="type">NODE_ENV</span>=<span class="string">development</span>
+<span class="type">PORT</span>=<span class="number">5000</span></code></pre>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="mb-5">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold"
+                            style="background:rgba(245,158,11,0.15);color:#f59e0b;">3</span>
+                        <h4 class="text-sm font-semibold text-white/80">Run Database Migrations</h4>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="text-[11px] text-white/30 font-medium">terminal</span>
+                            <button
+                                class="copy-btn text-[11px] text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors"
+                                onclick="copyCode(this)">
+                                <iconify-icon icon="solar:copy-bold" width="13"></iconify-icon>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code><span class="comment"># Push schema to database</span>
+<span class="func">npx</span> drizzle-kit push
+
+<span class="comment"># Or generate & run migrations</span>
+<span class="func">npx</span> drizzle-kit generate
+<span class="func">npx</span> drizzle-kit migrate</code></pre>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div>
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <span class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold"
+                            style="background:rgba(245,158,11,0.15);color:#f59e0b;">4</span>
+                        <h4 class="text-sm font-semibold text-white/80">Start Development Server</h4>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="text-[11px] text-white/30 font-medium">terminal</span>
+                            <button
+                                class="copy-btn text-[11px] text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors"
+                                onclick="copyCode(this)">
+                                <iconify-icon icon="solar:copy-bold" width="13"></iconify-icon>
+                                Copy
+                            </button>
+                        </div>
+                        <pre><code><span class="comment"># Start both Vite dev server + Express backend</span>
+<span class="func">npm</span> run dev
+
+<span class="comment"># → Client: http://localhost:5173</span>
+<span class="comment"># → API:   http://localhost:5000</span></code></pre>
+                    </div>
+                </div>
+
+                <!-- Success callout -->
+                <div class="mt-6 rounded-lg p-4 flex items-start gap-3"
+                    style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.12);">
+                    <iconify-icon icon="solar:check-circle-bold" width="20"
+                        class="text-emerald-400 mt-0.5 flex-shrink-0"></iconify-icon>
+                    <div>
+                        <p class="text-sm font-medium text-emerald-400">You're all set!</p>
+                        <p class="text-xs text-white/40 mt-0.5">Open <code
+                                class="text-[11px] px-1 py-0.5 rounded bg-white/5 text-white/50">http://localhost:5173</code>
+                            in your browser. Create an account and start your first focus session.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Reference Section -->
+            <section id="api-reference" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:code-bold-duotone" width="17" class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">API Reference</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">Core REST endpoints used by the frontend.</p>
+
+                <!-- Auth Endpoints -->
+                <div class="mb-8">
+                    <h3 class="font-raj font-semibold text-base text-white/80 mb-4 flex items-center gap-2">
+                        <iconify-icon icon="solar:shield-keyhole-bold" width="16"
+                            class="text-amber-400/70"></iconify-icon>
+                        Authentication
+                    </h3>
+
+                    <div class="space-y-3">
+                        <!-- POST /api/register -->
+                        <div class="glass rounded-xl overflow-hidden">
+                            <button class="api-toggle w-full flex items-center justify-between p-4 text-left"
+                                onclick="toggleApi(this)">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 tracking-wide">POST</span>
+                                    <code class="text-sm text-white/70 font-medium">/api/register</code>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-bold" width="16"
+                                    class="text-white/20 transition-transform duration-200"></iconify-icon>
+                            </button>
+                            <div class="api-content hidden px-4 pb-4">
+                                <p class="text-xs text-white/40 mb-3">Creates a new user account with encrypted
+                                    password.</p>
+                                <div class="code-block">
+                                    <div class="code-header">
+                                        <span class="text-[11px] text-white/30">Request Body</span>
+                                    </div>
+                                    <pre><code>{
+  <span class="type">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="type">"password"</span>: <span class="string">"securePassword123"</span>
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- POST /api/login -->
+                        <div class="glass rounded-xl overflow-hidden">
+                            <button class="api-toggle w-full flex items-center justify-between p-4 text-left"
+                                onclick="toggleApi(this)">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 tracking-wide">POST</span>
+                                    <code class="text-sm text-white/70 font-medium">/api/login</code>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-bold" width="16"
+                                    class="text-white/20 transition-transform duration-200"></iconify-icon>
+                            </button>
+                            <div class="api-content hidden px-4 pb-4">
+                                <p class="text-xs text-white/40 mb-3">Authenticates user and establishes a session
+                                    cookie.</p>
+                                <div class="code-block">
+                                    <div class="code-header">
+                                        <span class="text-[11px] text-white/30">Request Body</span>
+                                    </div>
+                                    <pre><code>{
+  <span class="type">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="type">"password"</span>: <span class="string">"securePassword123"</span>
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- POST /api/logout -->
+                        <div class="glass rounded-xl overflow-hidden">
+                            <button class="api-toggle w-full flex items-center justify-between p-4 text-left"
+                                onclick="toggleApi(this)">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 tracking-wide">POST</span>
+                                    <code class="text-sm text-white/70 font-medium">/api/logout</code>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-bold" width="16"
+                                    class="text-white/20 transition-transform duration-200"></iconify-icon>
+                            </button>
+                            <div class="api-content hidden px-4 pb-4">
+                                <p class="text-xs text-white/40 mb-3">Destroys the active session and clears the cookie.
+                                </p>
+                                <div class="rounded-md p-3 text-xs text-white/40"
+                                    style="background:rgba(255,255,255,0.02);">
+                                    Returns <code class="text-emerald-400">204 No Content</code> on success.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Endpoints -->
+                <div>
+                    <h3 class="font-raj font-semibold text-base text-white/80 mb-4 flex items-center gap-2">
+                        <iconify-icon icon="solar:timer-bold" width="16" class="text-blue-400/70"></iconify-icon>
+                        Focus Sessions
+                    </h3>
+
+                    <div class="space-y-3">
+                        <!-- GET /api/sessions -->
+                        <div class="glass rounded-xl overflow-hidden">
+                            <button class="api-toggle w-full flex items-center justify-between p-4 text-left"
+                                onclick="toggleApi(this)">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 tracking-wide">GET</span>
+                                    <code class="text-sm text-white/70 font-medium">/api/sessions</code>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-bold" width="16"
+                                    class="text-white/20 transition-transform duration-200"></iconify-icon>
+                            </button>
+                            <div class="api-content hidden px-4 pb-4">
+                                <p class="text-xs text-white/40 mb-3">Returns all focus sessions for the authenticated
+                                    user, including computed analytics (streaks, heatmap data).</p>
+                                <div class="code-block">
+                                    <div class="code-header">
+                                        <span class="text-[11px] text-white/30">Response (200)</span>
+                                    </div>
+                                    <pre><code>{
+  <span class="type">"sessions"</span>: [
+    {
+      <span class="type">"id"</span>: <span class="number">1</span>,
+      <span class="type">"type"</span>: <span class="string">"focus"</span>,
+      <span class="type">"duration"</span>: <span class="number">25</span>,
+      <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
+    }
+  ],
+  <span class="type">"analytics"</span>: {
+    <span class="type">"currentStreak"</span>: <span class="number">5</span>,
+    <span class="type">"bestStreak"</span>: <span class="number">12</span>,
+    <span class="type">"totalSessions"</span>: <span class="number">87</span>,
+    <span class="type">"totalMinutes"</span>: <span class="number">2175</span>,
+    <span class="type">"heatmap"</span>: [...]
+  }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- POST /api/sessions -->
+                        <div class="glass rounded-xl overflow-hidden">
+                            <button class="api-toggle w-full flex items-center justify-between p-4 text-left"
+                                onclick="toggleApi(this)">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 tracking-wide">POST</span>
+                                    <code class="text-sm text-white/70 font-medium">/api/sessions</code>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-bold" width="16"
+                                    class="text-white/20 transition-transform duration-200"></iconify-icon>
+                            </button>
+                            <div class="api-content hidden px-4 pb-4">
+                                <p class="text-xs text-white/40 mb-3">Records a completed focus or break session.
+                                    Validated with Zod schema.</p>
+                                <div class="code-block">
+                                    <div class="code-header">
+                                        <span class="text-[11px] text-white/30">Request Body</span>
+                                    </div>
+                                    <pre><code>{
+  <span class="type">"type"</span>: <span class="string">"focus"</span>,       <span class="comment">// "focus" | "shortBreak" | "longBreak"</span>
+  <span class="type">"duration"</span>: <span class="number">25</span>,          <span class="comment">// in minutes</span>
+  <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Keyboard Shortcuts Section -->
+            <section id="keyboard-shortcuts" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:keyboard-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Keyboard Shortcuts</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">Power-user hotkeys for the timer interface.</p>
+
+                <div class="glass rounded-xl overflow-hidden">
+                    <table class="w-full">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                <th
+                                    class="text-left text-[11px] font-semibold tracking-[0.1em] uppercase text-white/30 px-5 py-3">
+                                    Action</th>
+                                <th
+                                    class="text-right text-[11px] font-semibold tracking-[0.1em] uppercase text-white/30 px-5 py-3">
+                                    Key</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                                <td class="px-5 py-3.5 text-sm text-white/60">Start / Pause Timer</td>
+                                <td class="px-5 py-3.5 text-right"><kbd>Space</kbd></td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                                <td class="px-5 py-3.5 text-sm text-white/60">Skip to Next Session</td>
+                                <td class="px-5 py-3.5 text-right"><kbd>N</kbd></td>
+                            </tr>
+                            <tr>
+                                <td class="px-5 py-3.5 text-sm text-white/60">Reset Timer</td>
+                                <td class="px-5 py-3.5 text-right"><kbd>R</kbd></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Changelog Section -->
+            <section id="changelog" class="reveal mb-20">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background:rgba(245,158,11,0.1);">
+                        <iconify-icon icon="solar:document-text-bold-duotone" width="17"
+                            class="text-accent-400"></iconify-icon>
+                    </div>
+                    <h2 class="font-raj font-bold text-2xl sm:text-3xl tracking-tight">Changelog</h2>
+                </div>
+                <p class="text-white/40 text-sm mb-8 ml-11">Release history and notable changes.</p>
+
+                <div class="space-y-6">
+                    <!-- v1.0.0 -->
+                    <div class="relative pl-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#d97706,#b45309);">
+                            <span class="text-[10px] font-bold text-white">1.0</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/90">v1.0.0</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                                    style="background:rgba(245,158,11,0.1);color:#f59e0b;">Latest</span>
+                            </div>
+                            <p class="text-xs text-white/30 mb-3">Initial production release</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Full auth flow</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Pomodoro timer engine</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Cloud sync</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Analytics dashboard</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Achievement system</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Keyboard shortcuts</span>
+                                <span
+                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
+                                    Settings panel</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="pt-10" style="border-top:1px solid rgba(255,255,255,0.05);">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center"
+                            style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                            <iconify-icon icon="solar:timer-bold" width="14" class="text-white"></iconify-icon>
+                        </div>
+                        <div>
+                            <span class="font-raj font-semibold text-sm tracking-wider">POMOFOCUS</span>
+                            <span class="text-white/20 text-sm ml-1">TRACK</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-white/25">
+                        Documentation v1.0.0 · Built with precision.
+                    </p>
+                </div>
+            </footer>
+
+        </div>
+    </main>
+
+    <script>
+        // =====================
+        // Mobile Sidebar
+        // =====================
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileOverlay = document.getElementById('mobile-overlay');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileNavLinks = document.getElementById('mobile-nav-links');
+
+        // Clone sidebar links for mobile
+        const desktopLinks = document.querySelectorAll('aside .sidebar-link');
+        desktopLinks.forEach(link => {
+            const clone = link.cloneNode(true);
+            clone.addEventListener('click', closeMobileSidebar);
+            mobileNavLinks.appendChild(clone);
+        });
+
+        mobileBtn.addEventListener('click', () => {
+            mobileOverlay.classList.add('open');
+            mobileSidebar.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        });
+
+        function closeMobileSidebar() {
+            mobileOverlay.classList.remove('open');
+            mobileSidebar.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // =====================
+        // Scroll Reveal
+        // =====================
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 60);
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // =====================
+        // Active Sidebar Link
+        // =====================
+        const sections = document.querySelectorAll('section[id]');
+        const allSidebarLinks = document.querySelectorAll('.sidebar-link');
+
+        function updateActiveLink() {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 120;
+                if (window.scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            allSidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // =====================
+        // TOC Progress
+        // =====================
+        const tocProgress = document.getElementById('toc-progress');
+        const tocPercent = document.getElementById('toc-percent');
+
+        function updateProgress() {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const percent = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+            tocProgress.style.height = percent + '%';
+            tocPercent.textContent = percent + '%';
+        }
+
+        // =====================
+        // Scroll Handler (throttled)
+        // =====================
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    updateActiveLink();
+                    updateProgress();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // Initial calls
+        updateActiveLink();
+        updateProgress();
+
+        // =====================
+        // API Toggle
+        // =====================
+        function toggleApi(btn) {
+            const content = btn.nextElementSibling;
+            const icon = btn.querySelector('iconify-icon');
+            const isHidden = content.classList.contains('hidden');
+
+            content.classList.toggle('hidden');
+            icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        // =====================
+        // Copy Code
+        // =====================
+        function copyCode(btn) {
+            const codeBlock = btn.closest('.code-block');
+            const code = codeBlock.querySelector('code').textContent;
+
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon> Copied!';
+                btn.style.color = '#34d399';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.color = '';
+                }, 2000);
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon> Copied!';
+                btn.style.color = '#34d399';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>

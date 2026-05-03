@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { BarChart3, Settings, Flame, LogOut, User as UserIcon } from "lucide-react";
+import { BarChart3, Settings, Flame, LogOut, User as UserIcon, Book } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
@@ -333,6 +333,9 @@ export default function PomodoroApp() {
           <p className="text-xs tracking-[0.22em] uppercase mt-0.5" style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.4)" }}>Pomodoro</p>
         </div>
         <div className="flex items-center gap-2.5">
+          <a href="/docs.html" target="_blank" rel="noreferrer" className="flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }} title="View Documentation">
+            <Book className="w-4 h-4" />
+          </a>
           <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSettings(true)} testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSidebar(true)} testId="button-sidebar" highlighted><Flame className="w-4 h-4" /></HBtn>
