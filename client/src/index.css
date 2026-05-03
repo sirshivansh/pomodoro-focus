@@ -2,71 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE */
+/* DARK GLASSMORPHISM — always dark */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(255,255,255, .04);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .03);
+  --elevate-2: rgba(255,255,255, .07);
 
-  /* Automatic computation of border around primary / danger buttons */
-  --opaque-button-border-intensity: -8; /* In terms of percentages */
+  --background: 240 8% 4%;
+  --foreground: 0 0% 95%;
+  --border: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 92%;
+  --card-border: 0 0% 100%;
 
-  /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --sidebar: 240 8% 6%;
+  --sidebar-foreground: 0 0% 88%;
+  --sidebar-border: 0 0% 100%;
+  --sidebar-primary: 0 0% 90%;
+  --sidebar-primary-foreground: 240 8% 4%;
+  --sidebar-accent: 0 0% 100%;
+  --sidebar-accent-foreground: 0 0% 80%;
+  --sidebar-ring: 0 0% 90%;
 
-  --background: 223 22% 22%;
-  --foreground: 220 25% 90%;
-  --border: 223 18% 30%;
-  --card: 223 20% 26%;
-  --card-foreground: 220 20% 88%;
-  --card-border: 223 18% 32%;
+  --popover: 240 8% 6%;
+  --popover-foreground: 0 0% 90%;
+  --popover-border: 0 0% 100%;
 
-  --sidebar: 223 22% 20%;
-  --sidebar-foreground: 220 20% 85%;
-  --sidebar-border: 223 18% 28%;
-  --sidebar-primary: 16 88% 65%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 223 18% 30%;
-  --sidebar-accent-foreground: 220 20% 75%;
-  --sidebar-ring: 16 88% 65%;
+  --primary: 0 0% 92%;
+  --primary-foreground: 240 8% 6%;
 
-  --popover: 223 20% 24%;
-  --popover-foreground: 220 20% 85%;
-  --popover-border: 223 18% 30%;
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 0 0% 85%;
 
-  --primary: 16 88% 65%;
-  --primary-foreground: 0 0% 100%;
+  --muted: 0 0% 100%;
+  --muted-foreground: 0 0% 42%;
 
-  --secondary: 223 18% 30%;
-  --secondary-foreground: 220 20% 80%;
-
-  --muted: 223 18% 28%;
-  --muted-foreground: 220 15% 55%;
-
-  --accent: 223 18% 32%;
-  --accent-foreground: 220 20% 78%;
+  --accent: 0 0% 100%;
+  --accent-foreground: 0 0% 80%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --input: 223 18% 34%;
-  --ring: 16 88% 65%;
-  --chart-1: 16 88% 65%;
-  --chart-2: 142 71% 55%;
-  --chart-3: 38 92% 60%;
-  --chart-4: 270 95% 70%;
-  --chart-5: 0 84% 65%;
+  --input: 0 0% 100%;
+  --ring: 0 0% 85%;
+
+  --chart-1: 0 0% 90%;
+  --chart-2: 160 60% 60%;
+  --chart-3: 38 80% 65%;
+  --chart-4: 200 70% 65%;
+  --chart-5: 280 60% 65%;
 
   --font-sans: Inter, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: .75rem; /* 12px */
+  --radius: 1rem;
 
-  /* Neumorphic shadows for dark background */
-  --neu-raised: 6px 6px 14px rgba(0,0,0,0.4), -3px -3px 10px rgba(255,255,255,0.05);
-  --neu-pressed: inset 4px 4px 10px rgba(0,0,0,0.4), inset -2px -2px 8px rgba(255,255,255,0.05);
-  --neu-raised-lg: 10px 10px 24px rgba(0,0,0,0.45), -5px -5px 16px rgba(255,255,255,0.06);
-  --neu-pressed-lg: inset 8px 8px 20px rgba(0,0,0,0.45), inset -4px -4px 12px rgba(255,255,255,0.06);
+  /* Glassmorphism tokens */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-bright: rgba(255, 255, 255, 0.15);
+  --glass-blur: blur(20px);
+
+  /* Glow tokens */
+  --glow-white: 0 0 30px rgba(255,255,255,0.12), 0 0 60px rgba(255,255,255,0.06);
+  --glow-accent: 0 0 20px rgba(255,255,255,0.2), 0 0 40px rgba(255,255,255,0.1);
+
+  /* Neumorphic (kept for fallback) */
+  --neu-raised: 6px 6px 14px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.04);
+  --neu-pressed: inset 4px 4px 10px rgba(0,0,0,0.5), inset -2px -2px 6px rgba(255,255,255,0.03);
+  --neu-raised-lg: 10px 10px 24px rgba(0,0,0,0.55), -4px -4px 14px rgba(255,255,255,0.04);
+  --neu-pressed-lg: inset 8px 8px 20px rgba(0,0,0,0.55), inset -3px -3px 10px rgba(255,255,255,0.03);
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.02);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.02);
   --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.02), 0px 1px 2px -1px hsl(0 0% 0% / 0.06);
@@ -110,8 +118,8 @@
 }
 
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(255,255,255, .04);
 
   --opaque-button-border-intensity: 9;  /* In terms of percentages */
 

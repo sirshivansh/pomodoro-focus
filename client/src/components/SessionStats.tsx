@@ -1,4 +1,3 @@
-import { CheckCircle, Target, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SessionStatsProps {
@@ -9,69 +8,51 @@ interface SessionStatsProps {
   className?: string;
 }
 
-interface StatPillProps {
-  icon: React.ReactNode;
-  value: string;
+interface StatItemProps {
   label: string;
-  color: string;
+  value: string;
+  subValue?: string;
 }
 
-function StatPill({ icon, value, label, color }: StatPillProps) {
+function StatItem({ label, value, subValue }: StatItemProps) {
   return (
     <div
-      className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
+      className="flex-1 flex flex-col items-center gap-1 py-4 rounded-xl"
       style={{
-        background: "hsl(var(--card))",
-        boxShadow: "var(--neu-raised)",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.07)",
       }}
     >
-      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ color }}>
-        {icon}
-      </div>
-      <div className="text-xl font-bold font-mono" style={{ color: "hsl(var(--foreground))" }}>
+      <div
+        className="text-2xl font-mono font-light"
+        style={{ color: "rgba(255,255,255,0.88)" }}
+      >
         {value}
       </div>
-      <div className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</div>
+      {subValue && (
+        <div className="text-xs font-mono" style={{ color: "rgba(255,255,255,0.35)" }}>
+          {subValue}
+        </div>
+      )}
+      <div className="text-xs tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>
+        {label}
+      </div>
     </div>
   );
 }
 
 export default function SessionStats({
-  sessionsCompleted,
-  currentCycle,
-  totalCycles,
-  timeSpentToday,
-  className,
+  sessionsCompleted, currentCycle, totalCycles, timeSpentToday, className,
 }: SessionStatsProps) {
-  const formatTime = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
-  };
+  const h = Math.floor(timeSpentToday / 60);
+  const m = timeSpentToday % 60;
+  const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
 
   return (
     <div className={cn("flex gap-3", className)}>
-      <StatPill
-        icon={<CheckCircle className="w-5 h-5" />}
-        value={String(sessionsCompleted)}
-        label="Sessions"
-        color="hsl(142 71% 55%)"
-        data-testid="text-sessions-completed"
-      />
-      <StatPill
-        icon={<Target className="w-5 h-5" />}
-        value={`${currentCycle}/${totalCycles}`}
-        label="Cycle"
-        color="hsl(16 88% 65%)"
-        data-testid="badge-current-cycle"
-      />
-      <StatPill
-        icon={<Clock className="w-5 h-5" />}
-        value={formatTime(timeSpentToday)}
-        label="Today"
-        color="hsl(38 92% 60%)"
-        data-testid="text-time-today"
-      />
+      <StatItem label="Sessions" value={String(sessionsCompleted)} data-testid="text-sessions-completed" />
+      <StatItem label="Cycle" value={`${currentCycle}`} subValue={`of ${totalCycles}`} data-testid="badge-current-cycle" />
+      <StatItem label="Today" value={timeStr} data-testid="text-time-today" />
     </div>
   );
 }
