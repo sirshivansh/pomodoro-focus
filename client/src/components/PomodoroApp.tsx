@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
-import { Moon, Sun, BarChart3 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { BarChart3, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
@@ -23,24 +21,33 @@ const DEFAULT_CONFIG: TimerConfig = {
 function playBeep() {
   try {
     const ctx = new AudioContext();
-    const oscillator = ctx.createOscillator();
+    const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    oscillator.connect(gain);
+    osc.connect(gain);
     gain.connect(ctx.destination);
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
     gain.gain.setValueAtTime(0.4, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.8);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
   } catch (_) {}
 }
 
+const SESSION_TABS: { key: SessionType; label: string }[] = [
+  { key: "work", label: "Focus" },
+  { key: "short-break", label: "Short Break" },
+  { key: "long-break", label: "Long Break" },
+];
+
+const SESSION_ACCENT: Record<SessionType, string> = {
+  "work": "hsl(16 88% 65%)",
+  "short-break": "hsl(142 71% 55%)",
+  "long-break": "hsl(220 80% 68%)",
+};
+
 export default function PomodoroApp() {
   const { toast } = useToast();
-  const [isDark, setIsDark] = useState(() => {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [config, setConfig] = useState<TimerConfig>(DEFAULT_CONFIG);
@@ -63,56 +70,39 @@ export default function PomodoroApp() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Always force dark mode for this neumorphic design
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
+    document.documentElement.classList.add("dark");
+  }, []);
 
   const handleSessionComplete = useCallback((current: TimerData, cfg: TimerConfig) => {
-    const nextSessions = current.currentSession === "work"
-      ? current.sessionsCompleted + 1
-      : current.sessionsCompleted;
-
+    const nextSessions = current.currentSession === "work" ? current.sessionsCompleted + 1 : current.sessionsCompleted;
     let nextSession: SessionType;
     let nextDuration: number;
 
     if (current.currentSession === "work") {
-      const isLongBreak = nextSessions % cfg.sessionsUntilLongBreak === 0;
-      nextSession = isLongBreak ? "long-break" : "short-break";
-      nextDuration = isLongBreak ? cfg.longBreakDuration : cfg.shortBreakDuration;
-      toast({
-        title: "Focus session complete!",
-        description: `Time for a ${isLongBreak ? "long" : "short"} break. Well done!`,
-      });
+      const isLong = nextSessions % cfg.sessionsUntilLongBreak === 0;
+      nextSession = isLong ? "long-break" : "short-break";
+      nextDuration = isLong ? cfg.longBreakDuration : cfg.shortBreakDuration;
+      toast({ title: "Session complete!", description: `Time for a ${isLong ? "long" : "short"} break.` });
     } else {
       nextSession = "work";
       nextDuration = cfg.workDuration;
-      toast({
-        title: "Break over!",
-        description: "Ready to focus again? Let's go!",
-      });
+      toast({ title: "Break over!", description: "Ready to focus again?" });
     }
 
     if (cfg.soundEnabled) playBeep();
 
-    // TODO: remove mock data update - replace with real data persistence
+    // TODO: remove mock data update - replace with real persistence
     setStreakData(prev => ({
       ...prev,
       todaySessions: current.currentSession === "work" ? prev.todaySessions + 1 : prev.todaySessions,
-      timeSpentToday: current.currentSession === "work"
-        ? prev.timeSpentToday + Math.floor(cfg.workDuration / 60)
-        : prev.timeSpentToday,
+      timeSpentToday: current.currentSession === "work" ? prev.timeSpentToday + Math.floor(cfg.workDuration / 60) : prev.timeSpentToday,
     }));
 
-    setTimerData({
-      timeRemaining: nextDuration,
-      totalTime: nextDuration,
-      currentSession: nextSession,
-      sessionsCompleted: nextSessions,
-      state: "idle",
-    });
+    setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: "idle" });
   }, [toast]);
 
-  // Countdown interval
   useEffect(() => {
     if (timerData.state === "running") {
       intervalRef.current = setInterval(() => {
@@ -126,157 +116,182 @@ export default function PomodoroApp() {
         });
       }, 1000);
     } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [timerData.state, config, handleSessionComplete]);
 
-  // Update document title with time remaining
   useEffect(() => {
-    const mins = Math.floor(timerData.timeRemaining / 60).toString().padStart(2, "0");
-    const secs = (timerData.timeRemaining % 60).toString().padStart(2, "0");
-    const label = timerData.currentSession === "work" ? "Focus" : "Break";
-    document.title = timerData.state === "running"
-      ? `${mins}:${secs} — ${label} | Focus Timer`
-      : "Focus Timer";
-  }, [timerData.timeRemaining, timerData.state, timerData.currentSession]);
+    const m = Math.floor(timerData.timeRemaining / 60).toString().padStart(2, "0");
+    const s = (timerData.timeRemaining % 60).toString().padStart(2, "0");
+    document.title = timerData.state === "running" ? `${m}:${s} — Focus Timer` : "Focus Timer";
+  }, [timerData.timeRemaining, timerData.state]);
+
+  const switchSession = (session: SessionType) => {
+    if (timerData.state === "running") return;
+    const dur = session === "work" ? config.workDuration : session === "short-break" ? config.shortBreakDuration : config.longBreakDuration;
+    setTimerData(prev => ({ ...prev, currentSession: session, timeRemaining: dur, totalTime: dur, state: "idle" }));
+  };
 
   const handleStart = () => setTimerData(prev => ({ ...prev, state: "running" }));
   const handlePause = () => setTimerData(prev => ({ ...prev, state: "paused" }));
-  const handleStop = () => setTimerData(prev => ({
-    ...prev, state: "idle", timeRemaining: prev.totalTime,
-  }));
-
+  const handleStop = () => setTimerData(prev => ({ ...prev, state: "idle", timeRemaining: prev.totalTime }));
   const handleReset = () => {
-    const duration = timerData.currentSession === "work"
-      ? config.workDuration
-      : timerData.currentSession === "short-break"
-      ? config.shortBreakDuration
-      : config.longBreakDuration;
-    setTimerData(prev => ({
-      ...prev, timeRemaining: duration, totalTime: duration, state: "idle",
-    }));
+    const dur = timerData.currentSession === "work" ? config.workDuration : timerData.currentSession === "short-break" ? config.shortBreakDuration : config.longBreakDuration;
+    setTimerData(prev => ({ ...prev, timeRemaining: dur, totalTime: dur, state: "idle" }));
   };
-
-  const handleSaveSettings = (newConfig: TimerConfig) => {
-    setConfig(newConfig);
+  const handleSaveSettings = (c: TimerConfig) => {
+    setConfig(c);
     if (timerData.state === "idle") {
-      const duration = timerData.currentSession === "work"
-        ? newConfig.workDuration
-        : timerData.currentSession === "short-break"
-        ? newConfig.shortBreakDuration
-        : newConfig.longBreakDuration;
-      setTimerData(prev => ({ ...prev, timeRemaining: duration, totalTime: duration }));
+      const dur = timerData.currentSession === "work" ? c.workDuration : timerData.currentSession === "short-break" ? c.shortBreakDuration : c.longBreakDuration;
+      setTimerData(prev => ({ ...prev, timeRemaining: dur, totalTime: dur }));
     }
   };
 
-  const currentCycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
+  const accent = SESSION_ACCENT[timerData.currentSession];
+  const cycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "hsl(var(--background))" }}
+    >
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold">Focus Timer</h1>
-            <p className="text-sm text-muted-foreground">Stay productive with Pomodoro</p>
-          </div>
+      <header
+        className="flex items-center justify-between px-6 py-4"
+        style={{ borderBottom: "1px solid hsl(var(--border))" }}
+      >
+        <div>
+          <h1
+            className="text-lg font-bold tracking-wide"
+            style={{ color: "hsl(var(--foreground))" }}
+          >
+            Focus Timer
+          </h1>
+          <p className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            Pomodoro Technique
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {/* Analytics */}
-            <Sheet open={showAnalytics} onOpenChange={setShowAnalytics}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" data-testid="button-analytics">
-                  <BarChart3 className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Analytics</SheetTitle>
-                  <SheetDescription>Your productivity overview across time periods.</SheetDescription>
-                </SheetHeader>
-                <div className="mt-6">
-                  <Analytics />
-                </div>
-              </SheetContent>
-            </Sheet>
+        <div className="flex items-center gap-3">
+          {/* Analytics */}
+          <button
+            onClick={() => setShowAnalytics(true)}
+            data-testid="button-analytics"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150"
+            style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
+          >
+            <BarChart3 className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />
+          </button>
 
-            {/* Theme toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDark(d => !d)}
-              data-testid="button-theme-toggle"
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-          </div>
+          {/* Settings */}
+          <button
+            onClick={() => setShowSettings(true)}
+            data-testid="button-settings-header"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150"
+            style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
+          >
+            <Settings className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />
+          </button>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className="space-y-8">
-          {/* Timer */}
-          <div className="text-center">
-            <Timer
-              timeRemaining={timerData.timeRemaining}
-              totalTime={timerData.totalTime}
-              currentSession={timerData.currentSession}
-              state={timerData.state}
-            />
-            <div className="mt-4">
-              <ControlButtons
-                state={timerData.state}
-                onStart={handleStart}
-                onPause={handlePause}
-                onStop={handleStop}
-                onReset={handleReset}
-                onSettings={() => setShowSettings(true)}
-              />
-            </div>
-          </div>
+      {/* Main */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-10 max-w-lg mx-auto w-full">
 
-          {/* Stats */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <SessionStats
-              sessionsCompleted={timerData.sessionsCompleted}
-              currentCycle={currentCycle}
-              totalCycles={config.sessionsUntilLongBreak}
-              timeSpentToday={streakData.timeSpentToday}
-            />
-            <StreakCounter
-              currentStreak={streakData.currentStreak}
-              longestStreak={streakData.longestStreak}
-              todaySessions={streakData.todaySessions}
-              dailyGoal={8}
-            />
-          </div>
-
-          {/* Info footer */}
-          <Card className="bg-muted/40">
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                25 minutes of deep work, then a short break. After 4 cycles, take a long break and recharge.
-              </p>
-            </CardContent>
-          </Card>
+        {/* Session type tabs */}
+        <div
+          className="flex gap-1 p-1 rounded-full"
+          style={{
+            background: "hsl(var(--card))",
+            boxShadow: "var(--neu-pressed)",
+          }}
+        >
+          {SESSION_TABS.map(({ key, label }) => {
+            const active = timerData.currentSession === key;
+            return (
+              <button
+                key={key}
+                onClick={() => switchSession(key)}
+                data-testid={`button-session-${key}`}
+                className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
+                style={{
+                  color: active ? "white" : "hsl(var(--muted-foreground))",
+                  background: active ? SESSION_ACCENT[key] : "transparent",
+                  boxShadow: active
+                    ? "3px 3px 8px rgba(0,0,0,0.35), -1px -1px 4px rgba(255,255,255,0.06)"
+                    : "none",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Timer ring */}
+        <Timer
+          timeRemaining={timerData.timeRemaining}
+          totalTime={timerData.totalTime}
+          currentSession={timerData.currentSession}
+          state={timerData.state}
+        />
+
+        {/* Controls */}
+        <ControlButtons
+          state={timerData.state}
+          onStart={handleStart}
+          onPause={handlePause}
+          onStop={handleStop}
+          onReset={handleReset}
+          onSettings={() => setShowSettings(true)}
+        />
+
+        {/* Stats */}
+        <SessionStats
+          sessionsCompleted={timerData.sessionsCompleted}
+          currentCycle={cycle}
+          totalCycles={config.sessionsUntilLongBreak}
+          timeSpentToday={streakData.timeSpentToday}
+          className="w-full"
+        />
+
+        {/* Streak */}
+        <StreakCounter
+          currentStreak={streakData.currentStreak}
+          longestStreak={streakData.longestStreak}
+          todaySessions={streakData.todaySessions}
+          dailyGoal={8}
+          className="w-full"
+        />
       </main>
+
+      {/* Analytics sheet */}
+      <Sheet open={showAnalytics} onOpenChange={setShowAnalytics}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg overflow-y-auto"
+          style={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+        >
+          <SheetHeader>
+            <SheetTitle style={{ color: "hsl(var(--foreground))" }}>Analytics</SheetTitle>
+            <SheetDescription style={{ color: "hsl(var(--muted-foreground))" }}>
+              Your productivity overview.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            <Analytics />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Settings overlay */}
       {showSettings && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <SettingsPanel
-            config={config}
-            onSave={handleSaveSettings}
-            onClose={() => setShowSettings(false)}
-          />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+        >
+          <SettingsPanel config={config} onSave={handleSaveSettings} onClose={() => setShowSettings(false)} />
         </div>
       )}
     </div>

@@ -1,201 +1,171 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 
-interface AnalyticsProps {
-  className?: string;
-}
-
+interface AnalyticsProps { className?: string; }
 type Period = "daily" | "weekly" | "monthly" | "yearly";
 
+// TODO: remove mock data - replace with real analytics data from backend/localStorage
+const MOCK: Record<Period, { chart: { name: string; sessions: number }[]; total: number; time: number }> = {
+  daily: {
+    chart: [
+      { name: "9am", sessions: 4 }, { name: "11am", sessions: 2 }, { name: "1pm", sessions: 0 },
+      { name: "3pm", sessions: 6 }, { name: "5pm", sessions: 3 }, { name: "7pm", sessions: 1 },
+    ],
+    total: 16, time: 400,
+  },
+  weekly: {
+    chart: [
+      { name: "Mon", sessions: 12 }, { name: "Tue", sessions: 8 }, { name: "Wed", sessions: 16 },
+      { name: "Thu", sessions: 14 }, { name: "Fri", sessions: 10 }, { name: "Sat", sessions: 6 }, { name: "Sun", sessions: 4 },
+    ],
+    total: 70, time: 1750,
+  },
+  monthly: {
+    chart: [
+      { name: "Wk 1", sessions: 45 }, { name: "Wk 2", sessions: 52 }, { name: "Wk 3", sessions: 38 }, { name: "Wk 4", sessions: 41 },
+    ],
+    total: 176, time: 4400,
+  },
+  yearly: {
+    chart: [
+      { name: "Jan", sessions: 120 }, { name: "Feb", sessions: 110 }, { name: "Mar", sessions: 140 },
+      { name: "Apr", sessions: 130 }, { name: "May", sessions: 150 }, { name: "Jun", sessions: 135 },
+    ],
+    total: 785, time: 19625,
+  },
+};
+
+const fmtTime = (m: number) => {
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return h > 0 ? `${h}h ${rem}m` : `${m}m`;
+};
+
 export default function Analytics({ className }: AnalyticsProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>("weekly");
+  const [period, setPeriod] = useState<Period>("weekly");
+  const data = MOCK[period];
 
-  // TODO: remove mock data - replace with real analytics data
-  const getAnalyticsData = (period: Period) => {
-    switch (period) {
-      case "daily":
-        return {
-          chartData: [
-            { name: "00:00", sessions: 0 },
-            { name: "06:00", sessions: 0 },
-            { name: "09:00", sessions: 4 },
-            { name: "12:00", sessions: 2 },
-            { name: "15:00", sessions: 6 },
-            { name: "18:00", sessions: 3 },
-            { name: "21:00", sessions: 1 },
-          ],
-          totalSessions: 16,
-          totalTime: 400, // minutes
-          averageSession: 25,
-        };
-      case "weekly":
-        return {
-          chartData: [
-            { name: "Mon", sessions: 12 },
-            { name: "Tue", sessions: 8 },
-            { name: "Wed", sessions: 16 },
-            { name: "Thu", sessions: 14 },
-            { name: "Fri", sessions: 10 },
-            { name: "Sat", sessions: 6 },
-            { name: "Sun", sessions: 4 },
-          ],
-          totalSessions: 70,
-          totalTime: 1750, // minutes
-          averageSession: 25,
-        };
-      case "monthly":
-        return {
-          chartData: [
-            { name: "Week 1", sessions: 45 },
-            { name: "Week 2", sessions: 52 },
-            { name: "Week 3", sessions: 38 },
-            { name: "Week 4", sessions: 41 },
-          ],
-          totalSessions: 176,
-          totalTime: 4400, // minutes
-          averageSession: 25,
-        };
-      case "yearly":
-        return {
-          chartData: [
-            { name: "Jan", sessions: 120 },
-            { name: "Feb", sessions: 110 },
-            { name: "Mar", sessions: 140 },
-            { name: "Apr", sessions: 130 },
-            { name: "May", sessions: 150 },
-            { name: "Jun", sessions: 135 },
-          ],
-          totalSessions: 785,
-          totalTime: 19625, // minutes
-          averageSession: 25,
-        };
-    }
-  };
-
-  const sessionTypeData = [
-    { name: "Work", value: 75, color: "hsl(var(--primary))" },
-    { name: "Short Break", value: 20, color: "hsl(var(--chart-3))" },
-    { name: "Long Break", value: 5, color: "hsl(var(--chart-2))" },
-  ];
-
-  const data = getAnalyticsData(selectedPeriod);
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
-  };
+  const periods: Period[] = ["daily", "weekly", "monthly", "yearly"];
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Period selector */}
-      <div className="flex gap-2 justify-center">
-        {(["daily", "weekly", "monthly", "yearly"] as Period[]).map((period) => (
-          <Button
-            key={period}
-            variant={selectedPeriod === period ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedPeriod(period)}
-            data-testid={`button-period-${period}`}
+      {/* Period tabs */}
+      <div
+        className="flex gap-1 p-1 rounded-full"
+        style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-pressed)" }}
+      >
+        {periods.map(p => {
+          const active = p === period;
+          return (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              data-testid={`button-period-${p}`}
+              className="flex-1 py-2 rounded-full text-sm font-medium capitalize transition-all duration-200"
+              style={{
+                color: active ? "white" : "hsl(var(--muted-foreground))",
+                background: active ? "hsl(16 88% 65%)" : "transparent",
+                boxShadow: active ? "3px 3px 8px rgba(0,0,0,0.35)" : "none",
+              }}
+            >
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { label: "Total Sessions", value: String(data.total), color: "hsl(16 88% 65%)" },
+          { label: "Total Time", value: fmtTime(data.time), color: "hsl(142 71% 55%)" },
+        ].map(({ label, value, color }) => (
+          <div
+            key={label}
+            className="rounded-2xl p-4 text-center"
+            style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
           >
-            {period.charAt(0).toUpperCase() + period.slice(1)}
-          </Button>
+            <div className="text-2xl font-bold font-mono" style={{ color }}>{value}</div>
+            <div className="text-xs mt-1" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</div>
+          </div>
         ))}
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary" data-testid="text-total-sessions">
-              {data.totalSessions}
-            </div>
-            <div className="text-sm text-muted-foreground">Sessions</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-chart-2" data-testid="text-total-time">
-              {formatTime(data.totalTime)}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Time</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-chart-3" data-testid="text-average-session">
-              {data.averageSession}m
-            </div>
-            <div className="text-sm text-muted-foreground">Avg Session</div>
-          </CardContent>
-        </Card>
+      {/* Bar chart */}
+      <div
+        className="rounded-2xl p-5"
+        style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
+      >
+        <div className="text-sm font-semibold mb-4" style={{ color: "hsl(var(--foreground))" }}>
+          Sessions over time
+        </div>
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data.chart} barSize={20}>
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: "hsl(220 15% 50%)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "hsl(220 15% 50%)" }}
+                axisLine={false}
+                tickLine={false}
+                width={24}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(223 20% 26%)",
+                  border: "1px solid hsl(223 18% 34%)",
+                  borderRadius: 10,
+                  color: "hsl(220 25% 90%)",
+                  fontSize: 12,
+                }}
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+              />
+              <Bar
+                dataKey="sessions"
+                fill="hsl(16 88% 65%)"
+                radius={[6, 6, 0, 0]}
+                opacity={0.9}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* Sessions chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Session Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.chartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Bar dataKey="sessions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Session type breakdown */}
+      <div
+        className="rounded-2xl p-5 space-y-4"
+        style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
+      >
+        <div className="text-sm font-semibold" style={{ color: "hsl(var(--foreground))" }}>
+          Session Breakdown
+        </div>
+        {[
+          { label: "Focus", pct: 75, color: "hsl(16 88% 65%)" },
+          { label: "Short Break", pct: 20, color: "hsl(142 71% 55%)" },
+          { label: "Long Break", pct: 5, color: "hsl(220 80% 68%)" },
+        ].map(({ label, pct, color }) => (
+          <div key={label} className="space-y-1">
+            <div className="flex justify-between text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+              <span>{label}</span>
+              <span className="font-mono">{pct}%</span>
+            </div>
+            <div
+              className="h-2 w-full rounded-full"
+              style={{ background: "hsl(var(--muted))", boxShadow: "var(--neu-pressed)" }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: color }}
+              />
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Session types pie chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Session Types</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={sessionTypeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={80}
-                  dataKey="value"
-                >
-                  {sessionTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          
-          <div className="flex justify-center gap-4 mt-4">
-            {sessionTypeData.map((entry) => (
-              <div key={entry.name} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="text-sm">{entry.name}: {entry.value}%</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
     </div>
   );
 }

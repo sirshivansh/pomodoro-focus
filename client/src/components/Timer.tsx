@@ -10,100 +10,111 @@ interface TimerProps {
   className?: string;
 }
 
-export default function Timer({ 
-  timeRemaining, 
-  totalTime, 
-  currentSession, 
-  state,
-  className 
-}: TimerProps) {
-  const [displayTime, setDisplayTime] = useState(timeRemaining);
+const SESSION_COLORS: Record<SessionType, string> = {
+  "work": "#F4785A",
+  "short-break": "#60C7A8",
+  "long-break": "#7B9EF4",
+};
 
-  useEffect(() => {
-    setDisplayTime(timeRemaining);
-  }, [timeRemaining]);
+const SESSION_GLOW: Record<SessionType, string> = {
+  "work": "rgba(244,120,90,0.35)",
+  "short-break": "rgba(96,199,168,0.3)",
+  "long-break": "rgba(123,158,244,0.3)",
+};
 
-  const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0;
-  const circumference = 2 * Math.PI * 140; // radius = 140
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+export default function Timer({ timeRemaining, totalTime, currentSession, state, className }: TimerProps) {
+  const [displayed, setDisplayed] = useState(timeRemaining);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  useEffect(() => { setDisplayed(timeRemaining); }, [timeRemaining]);
 
-  const getSessionColor = () => {
-    switch (currentSession) {
-      case 'work':
-        return 'stroke-primary';
-      case 'short-break':
-        return 'stroke-chart-3'; // orange
-      case 'long-break':
-        return 'stroke-chart-2'; // green
-      default:
-        return 'stroke-primary';
-    }
-  };
+  const size = 300;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth * 2) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) : 0;
+  const offset = circumference - progress * circumference;
 
-  const getSessionLabel = () => {
-    switch (currentSession) {
-      case 'work':
-        return 'Focus Time';
-      case 'short-break':
-        return 'Short Break';
-      case 'long-break':
-        return 'Long Break';
-      default:
-        return 'Focus Time';
-    }
-  };
+  const mins = Math.floor(displayed / 60).toString().padStart(2, "0");
+  const secs = (displayed % 60).toString().padStart(2, "0");
+
+  const color = SESSION_COLORS[currentSession];
+  const glow = SESSION_GLOW[currentSession];
 
   return (
-    <div className={cn("flex flex-col items-center justify-center", className)}>
-      <div className="relative w-80 h-80 mb-6">
+    <div className={cn("flex flex-col items-center", className)}>
+      <div
+        className="relative flex items-center justify-center rounded-full"
+        style={{
+          width: size,
+          height: size,
+          boxShadow: `var(--neu-raised-lg), 0 0 40px ${state === "running" ? glow : "transparent"}`,
+          background: "hsl(var(--card))",
+          transition: "box-shadow 0.6s ease",
+        }}
+      >
+        {/* Outer track ring */}
         <svg
-          className="w-full h-full transform -rotate-90"
-          viewBox="0 0 320 320"
+          className="absolute inset-0"
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          style={{ transform: "rotate(-90deg)" }}
         >
-          {/* Background circle */}
+          {/* Track */}
           <circle
-            cx="160"
-            cy="160"
-            r="140"
-            stroke="currentColor"
-            strokeWidth="8"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
             fill="none"
-            className="text-muted"
+            stroke="rgba(255,255,255,0.05)"
+            strokeWidth={strokeWidth}
           />
-          {/* Progress circle */}
+          {/* Progress arc */}
           <circle
-            cx="160"
-            cy="160"
-            r="140"
-            stroke="currentColor"
-            strokeWidth="8"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
             fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className={cn(
-              "transition-all duration-1000 ease-linear",
-              getSessionColor()
-            )}
+            strokeDashoffset={offset}
+            style={{
+              transition: "stroke-dashoffset 1s linear, stroke 0.5s ease",
+              filter: `drop-shadow(0 0 6px ${color})`,
+            }}
           />
         </svg>
-        
-        {/* Timer display in center */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-6xl font-bold font-mono text-foreground mb-2">
-            {formatTime(displayTime)}
+
+        {/* Time display */}
+        <div className="relative flex flex-col items-center select-none">
+          <div
+            className="font-mono tracking-wider"
+            style={{
+              fontSize: "4.5rem",
+              fontWeight: 700,
+              lineHeight: 1,
+              color: "hsl(var(--foreground))",
+              letterSpacing: "0.05em",
+            }}
+            data-testid="text-timer-display"
+          >
+            {mins}
+            <span style={{ color: color, opacity: 0.9 }}>:</span>
+            {secs}
           </div>
-          <div className="text-lg font-medium text-muted-foreground">
-            {getSessionLabel()}
+
+          <div className="mt-3 text-sm font-medium" style={{ color: color }}>
+            {currentSession === "work"
+              ? "Focus Time"
+              : currentSession === "short-break"
+              ? "Short Break"
+              : "Long Break"}
           </div>
-          <div className="text-sm text-muted-foreground mt-1 capitalize">
-            {state === 'running' ? 'In Progress' : state === 'paused' ? 'Paused' : 'Ready'}
+
+          <div className="mt-1 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            {state === "running" ? "In Progress" : state === "paused" ? "Paused" : "Ready"}
           </div>
         </div>
       </div>

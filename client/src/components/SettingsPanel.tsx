@@ -1,137 +1,152 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TimerConfig } from "@shared/schema";
-import { cn } from "@/lib/utils";
 
 interface SettingsPanelProps {
   config: TimerConfig;
   onSave: (config: TimerConfig) => void;
   onClose: () => void;
-  className?: string;
 }
 
-export default function SettingsPanel({ 
-  config, 
-  onSave, 
-  onClose,
-  className 
-}: SettingsPanelProps) {
-  const [settings, setSettings] = useState<TimerConfig>(config);
+interface NeuInputProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  testId: string;
+}
 
-  const handleSave = () => {
-    console.log('Settings saved:', settings);
-    onSave(settings);
-    onClose();
-  };
+function NeuInput({ label, value, min, max, onChange, testId }: NeuInputProps) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-medium" style={{ color: "hsl(var(--muted-foreground))" }}>
+        {label}
+      </label>
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-xl"
+        style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-pressed)" }}
+      >
+        <button
+          onClick={() => onChange(Math.max(min, value - 1))}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-lg font-bold transition-all"
+          style={{ background: "hsl(var(--background))", boxShadow: "var(--neu-raised)", color: "hsl(var(--muted-foreground))" }}
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(Math.min(max, Math.max(min, parseInt(e.target.value) || min)))}
+          data-testid={testId}
+          className="flex-1 text-center bg-transparent font-mono text-lg font-bold outline-none"
+          style={{ color: "hsl(var(--foreground))" }}
+        />
+        <button
+          onClick={() => onChange(Math.min(max, value + 1))}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-lg font-bold transition-all"
+          style={{ background: "hsl(var(--background))", boxShadow: "var(--neu-raised)", color: "hsl(var(--muted-foreground))" }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
 
-  const handleCancel = () => {
-    console.log('Settings cancelled');
-    setSettings(config); // Reset to original
-    onClose();
-  };
-
-  const updateSetting = (key: keyof TimerConfig, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+export default function SettingsPanel({ config, onSave, onClose }: SettingsPanelProps) {
+  const [s, setS] = useState<TimerConfig>(config);
+  const update = (k: keyof TimerConfig, v: any) => setS(p => ({ ...p, [k]: v }));
 
   return (
-    <Card className={cn("w-full max-w-md", className)}>
-      <CardHeader>
-        <CardTitle>Timer Settings</CardTitle>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        {/* Duration settings */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="work-duration">Work Duration (minutes)</Label>
-            <Input
-              id="work-duration"
-              type="number"
-              min="1"
-              max="60"
-              value={Math.floor(settings.workDuration / 60)}
-              onChange={(e) => updateSetting('workDuration', parseInt(e.target.value) * 60)}
-              data-testid="input-work-duration"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="short-break-duration">Short Break (minutes)</Label>
-            <Input
-              id="short-break-duration"
-              type="number"
-              min="1"
-              max="30"
-              value={Math.floor(settings.shortBreakDuration / 60)}
-              onChange={(e) => updateSetting('shortBreakDuration', parseInt(e.target.value) * 60)}
-              data-testid="input-short-break-duration"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="long-break-duration">Long Break (minutes)</Label>
-            <Input
-              id="long-break-duration"
-              type="number"
-              min="1"
-              max="60"
-              value={Math.floor(settings.longBreakDuration / 60)}
-              onChange={(e) => updateSetting('longBreakDuration', parseInt(e.target.value) * 60)}
-              data-testid="input-long-break-duration"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="sessions-until-long-break">Sessions until Long Break</Label>
-            <Input
-              id="sessions-until-long-break"
-              type="number"
-              min="2"
-              max="10"
-              value={settings.sessionsUntilLongBreak}
-              onChange={(e) => updateSetting('sessionsUntilLongBreak', parseInt(e.target.value))}
-              data-testid="input-sessions-until-long-break"
-            />
-          </div>
-        </div>
+    <div
+      className="w-full max-w-sm rounded-2xl p-6 space-y-6"
+      style={{ background: "hsl(var(--background))", boxShadow: "var(--neu-raised-lg)" }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold" style={{ color: "hsl(var(--foreground))" }}>Timer Settings</h2>
+        <button
+          onClick={onClose}
+          data-testid="button-close-settings"
+          className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ background: "hsl(var(--card))", boxShadow: "var(--neu-raised)" }}
+        >
+          <X className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />
+        </button>
+      </div>
 
-        {/* Sound settings */}
-        <div className="flex items-center justify-between">
-          <Label htmlFor="sound-enabled" className="text-sm font-medium">
-            Sound Notifications
-          </Label>
-          <Switch
-            id="sound-enabled"
-            checked={settings.soundEnabled}
-            onCheckedChange={(checked) => updateSetting('soundEnabled', checked)}
-            data-testid="switch-sound-enabled"
-          />
-        </div>
+      {/* Inputs */}
+      <div className="space-y-4">
+        <NeuInput
+          label="Focus Duration (min)"
+          value={Math.floor(s.workDuration / 60)}
+          min={1} max={60}
+          onChange={(v) => update("workDuration", v * 60)}
+          testId="input-work-duration"
+        />
+        <NeuInput
+          label="Short Break (min)"
+          value={Math.floor(s.shortBreakDuration / 60)}
+          min={1} max={30}
+          onChange={(v) => update("shortBreakDuration", v * 60)}
+          testId="input-short-break-duration"
+        />
+        <NeuInput
+          label="Long Break (min)"
+          value={Math.floor(s.longBreakDuration / 60)}
+          min={5} max={60}
+          onChange={(v) => update("longBreakDuration", v * 60)}
+          testId="input-long-break-duration"
+        />
+        <NeuInput
+          label="Sessions until Long Break"
+          value={s.sessionsUntilLongBreak}
+          min={2} max={10}
+          onChange={(v) => update("sessionsUntilLongBreak", v)}
+          testId="input-sessions-until-long-break"
+        />
+      </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3 pt-4">
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={handleCancel}
-            data-testid="button-cancel-settings"
-          >
-            Cancel
-          </Button>
-          <Button 
-            className="flex-1"
-            onClick={handleSave}
-            data-testid="button-save-settings"
-          >
-            Save
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Sound toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium" style={{ color: "hsl(var(--foreground))" }}>Sound Notifications</span>
+        <Switch
+          checked={s.soundEnabled}
+          onCheckedChange={(v) => update("soundEnabled", v)}
+          data-testid="switch-sound-enabled"
+        />
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onClose}
+          data-testid="button-cancel-settings"
+          className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: "hsl(var(--card))",
+            boxShadow: "var(--neu-raised)",
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => { onSave(s); onClose(); }}
+          data-testid="button-save-settings"
+          className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all text-white"
+          style={{
+            background: "linear-gradient(145deg, hsl(16 88% 70%), hsl(16 88% 58%))",
+            boxShadow: "4px 4px 10px rgba(244,120,90,0.4), -1px -1px 6px rgba(255,255,255,0.06)",
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
   );
 }

@@ -1,14 +1,39 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle, Target } from "lucide-react";
+import { CheckCircle, Target, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SessionStatsProps {
   sessionsCompleted: number;
   currentCycle: number;
   totalCycles: number;
-  timeSpentToday: number; // in minutes
+  timeSpentToday: number;
   className?: string;
+}
+
+interface StatPillProps {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  color: string;
+}
+
+function StatPill({ icon, value, label, color }: StatPillProps) {
+  return (
+    <div
+      className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl"
+      style={{
+        background: "hsl(var(--card))",
+        boxShadow: "var(--neu-raised)",
+      }}
+    >
+      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ color }}>
+        {icon}
+      </div>
+      <div className="text-xl font-bold font-mono" style={{ color: "hsl(var(--foreground))" }}>
+        {value}
+      </div>
+      <div className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</div>
+    </div>
+  );
 }
 
 export default function SessionStats({
@@ -16,61 +41,37 @@ export default function SessionStats({
   currentCycle,
   totalCycles,
   timeSpentToday,
-  className
+  className,
 }: SessionStatsProps) {
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
+  const formatTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
   };
 
   return (
-    <Card className={cn("w-full", className)}>
-      <CardContent className="p-4">
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <CheckCircle className="w-5 h-5 text-chart-2" />
-            </div>
-            <div className="text-2xl font-bold" data-testid="text-sessions-completed">
-              {sessionsCompleted}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Sessions
-            </div>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Target className="w-5 h-5 text-primary" />
-            </div>
-            <div className="text-lg font-semibold">
-              <Badge variant="outline" data-testid="badge-current-cycle">
-                {currentCycle}/{totalCycles}
-              </Badge>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Cycle
-            </div>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Clock className="w-5 h-5 text-chart-3" />
-            </div>
-            <div className="text-xl font-bold whitespace-nowrap" data-testid="text-time-today">
-              {formatTime(timeSpentToday)}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Today
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className={cn("flex gap-3", className)}>
+      <StatPill
+        icon={<CheckCircle className="w-5 h-5" />}
+        value={String(sessionsCompleted)}
+        label="Sessions"
+        color="hsl(142 71% 55%)"
+        data-testid="text-sessions-completed"
+      />
+      <StatPill
+        icon={<Target className="w-5 h-5" />}
+        value={`${currentCycle}/${totalCycles}`}
+        label="Cycle"
+        color="hsl(16 88% 65%)"
+        data-testid="badge-current-cycle"
+      />
+      <StatPill
+        icon={<Clock className="w-5 h-5" />}
+        value={formatTime(timeSpentToday)}
+        label="Today"
+        color="hsl(38 92% 60%)"
+        data-testid="text-time-today"
+      />
+    </div>
   );
 }
