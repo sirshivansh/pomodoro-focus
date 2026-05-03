@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { BarChart3, Settings, Flame, Clock } from "lucide-react";
+import { BarChart3, Settings, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
@@ -11,6 +11,8 @@ import FocusGoal from "./FocusGoal";
 import StreakCounter from "./StreakCounter";
 import Badges, { BADGE_MILESTONES } from "./Badges";
 import HistoryList, { saveSessionToHistory, loadHistory, clearHistory, SessionRecord } from "./HistoryList";
+import QuoteDisplay from "./QuoteDisplay";
+import WeeklyHeatmap from "./WeeklyHeatmap";
 import { SessionType, TimerConfig, TimerData } from "@shared/schema";
 
 const DEFAULT_CONFIG: TimerConfig = {
@@ -19,6 +21,8 @@ const DEFAULT_CONFIG: TimerConfig = {
   longBreakDuration: 900,
   sessionsUntilLongBreak: 4,
   soundEnabled: true,
+  autoStart: false,
+  notificationsEnabled: false,
 };
 
 const LS = {
@@ -50,22 +54,46 @@ function loadBadges(): string[] {
   return [];
 }
 function loadConfig(): TimerConfig {
-  try { const r = localStorage.getItem(LS.config); if (r) return JSON.parse(r); } catch {}
+  try {
+    const r = localStorage.getItem(LS.config);
+    if (r) return { ...DEFAULT_CONFIG, ...JSON.parse(r) };
+  } catch {}
   return DEFAULT_CONFIG;
 }
 
-function playBeep() {
+function playBeep(type: "work" | "break") {
   try {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = "sine";
-    osc.frequency.setValueAtTime(528, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.3);
+    if (type === "work") {
+      osc.frequency.setValueAtTime(528, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.3);
+    } else {
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.3);
+    }
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.4);
+  } catch (_) {}
+}
+
+function sendNotification(title: string, body: string) {
+  try {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.ico" });
+    }
+  } catch (_) {}
+}
+
+async function requestNotificationPermission() {
+  try {
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
   } catch (_) {}
 }
 
@@ -75,7 +103,6 @@ const SESSION_TABS: { key: SessionType; label: string }[] = [
   { key: "long-break",  label: "Long Break" },
 ];
 
-// Label for sidebar section headings
 function SLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="text-xs font-semibold tracking-[0.28em] uppercase"
@@ -85,30 +112,30 @@ function SLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Sidebar tab button
 function SidebarTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
+    <button onClick={onClick}
       className="flex-1 py-2 text-xs font-semibold tracking-[0.1em] uppercase rounded-full transition-all duration-200"
       style={{
         fontFamily: "'Rajdhani',sans-serif",
-        color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.45)",
+        color:      active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.45)",
         background: active ? "rgba(255,255,255,0.12)" : "transparent",
-        border: active ? "1px solid rgba(255,255,255,0.18)" : "1px solid transparent",
-      }}
-    >
+        border:     active ? "1px solid rgba(255,255,255,0.18)" : "1px solid transparent",
+      }}>
       {children}
     </button>
   );
 }
 
-// Header icon button
-function HBtn({ onClick, testId, children }: { onClick: () => void; testId: string; children: React.ReactNode }) {
+function HBtn({ onClick, testId, highlighted, children }: { onClick: () => void; testId: string; highlighted?: boolean; children: React.ReactNode }) {
   return (
     <button onClick={onClick} data-testid={testId}
       className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
-      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.55)" }}>
+      style={{
+        background: highlighted ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)",
+        border: `1px solid ${highlighted ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.1)"}`,
+        color: highlighted ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)",
+      }}>
       {children}
     </button>
   );
@@ -130,6 +157,7 @@ export default function PomodoroApp() {
   const [newBadge,     setNewBadge]     = useState<string | null>(null);
   const [focusGoal,    setFocusGoal]    = useState(() => localStorage.getItem(LS.focusGoal) || "");
   const [history,      setHistory]      = useState<SessionRecord[]>(() => loadHistory());
+  const [completedCount, setCompletedCount] = useState(0); // triggers quote rotation
 
   const [timerData, setTimerData] = useState<TimerData>(() => {
     const cfg = loadConfig();
@@ -138,10 +166,17 @@ export default function PomodoroApp() {
 
   const intervalRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<string>("");
+  const autoStartRef    = useRef(config.autoStart);
 
+  useEffect(() => { autoStartRef.current = config.autoStart; }, [config.autoStart]);
   useEffect(() => { document.documentElement.classList.add("dark"); }, []);
   useEffect(() => { localStorage.setItem(LS.focusGoal, focusGoal); }, [focusGoal]);
   useEffect(() => { localStorage.setItem(LS.config, JSON.stringify(config)); }, [config]);
+
+  // Request notification permission when user enables it
+  useEffect(() => {
+    if (config.notificationsEnabled) requestNotificationPermission();
+  }, [config.notificationsEnabled]);
 
   // Badge check
   useEffect(() => {
@@ -157,9 +192,9 @@ export default function PomodoroApp() {
     }
   }, [totalMins]);
 
-  const handleSessionComplete = useCallback((current: TimerData, cfg: TimerConfig) => {
+  const skipToNext = useCallback((current: TimerData, cfg: TimerConfig, completed: boolean) => {
     const isWork = current.currentSession === "work";
-    const nextSessions = isWork ? current.sessionsCompleted + 1 : current.sessionsCompleted;
+    const nextSessions = (isWork && completed) ? current.sessionsCompleted + 1 : current.sessionsCompleted;
     let nextSession: SessionType, nextDuration: number;
 
     if (isWork) {
@@ -167,54 +202,67 @@ export default function PomodoroApp() {
       nextSession  = isLong ? "long-break" : "short-break";
       nextDuration = isLong ? cfg.longBreakDuration : cfg.shortBreakDuration;
 
-      const durationMins = Math.floor(cfg.workDuration / 60);
+      if (completed) {
+        const durationMins = Math.floor(cfg.workDuration / 60);
+        const record = {
+          date: todayStr(), startTime: sessionStartRef.current || nowTime(),
+          durationMins, focusGoal: localStorage.getItem(LS.focusGoal) || "",
+          sessionType: "work" as const,
+        };
+        saveSessionToHistory(record);
+        setHistory(loadHistory());
+        setCompletedCount(c => c + 1);
 
-      // Save to history
-      const record = {
-        date: todayStr(),
-        startTime: sessionStartRef.current || nowTime(),
-        durationMins,
-        focusGoal: localStorage.getItem(LS.focusGoal) || "",
-        sessionType: "work" as const,
-      };
-      saveSessionToHistory(record);
-      setHistory(loadHistory());
+        setTodayData(prev => {
+          const u = { sessions: prev.sessions + 1, mins: prev.mins + durationMins, date: todayStr() };
+          localStorage.setItem(LS.today, JSON.stringify(u)); return u;
+        });
+        setTotalMins(prev => {
+          const u = prev + durationMins;
+          localStorage.setItem(LS.totalMins, String(u)); return u;
+        });
+        setStreak(prev => {
+          const today     = todayStr();
+          const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+          let cur = prev.current;
+          if      (prev.lastDate === today)     {}
+          else if (prev.lastDate === yesterday) cur = prev.current + 1;
+          else                                  cur = 1;
+          const u = { current: cur, best: Math.max(cur, prev.best), lastDate: today };
+          localStorage.setItem(LS.streak, JSON.stringify(u)); return u;
+        });
 
-      toast({ title: "Session complete", description: isLong ? "Long break time." : "Short break." });
-
-      setTodayData(prev => {
-        const u = { sessions: prev.sessions + 1, mins: prev.mins + durationMins, date: todayStr() };
-        localStorage.setItem(LS.today, JSON.stringify(u)); return u;
-      });
-      setTotalMins(prev => {
-        const u = prev + durationMins;
-        localStorage.setItem(LS.totalMins, String(u)); return u;
-      });
-      setStreak(prev => {
-        const today     = todayStr();
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-        let cur = prev.current;
-        if      (prev.lastDate === today)     { /* same day */ }
-        else if (prev.lastDate === yesterday) cur = prev.current + 1;
-        else                                  cur = 1;
-        const u = { current: cur, best: Math.max(cur, prev.best), lastDate: today };
-        localStorage.setItem(LS.streak, JSON.stringify(u)); return u;
-      });
+        if (cfg.soundEnabled) playBeep("work");
+        if (cfg.notificationsEnabled) sendNotification("Focus session complete!", isLong ? "Time for a long break." : "Take a short break.");
+        toast({ title: "Session complete", description: isLong ? "Long break time." : "Short break." });
+      }
     } else {
       nextSession  = "work"; nextDuration = cfg.workDuration;
-      toast({ title: "Break over", description: "Back to focus." });
+      if (completed) {
+        if (cfg.soundEnabled) playBeep("break");
+        if (cfg.notificationsEnabled) sendNotification("Break over!", "Ready to focus again?");
+        toast({ title: "Break over", description: "Back to focus." });
+      }
     }
 
-    if (cfg.soundEnabled) playBeep();
-    setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: "idle" });
+    const nextState = autoStartRef.current && completed ? "running" : "idle";
+    if (nextState === "running") sessionStartRef.current = nowTime();
+    else sessionStartRef.current = "";
+
+    setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
   }, [toast]);
 
+  // Timer tick
   useEffect(() => {
     if (timerData.state === "running") {
       if (!sessionStartRef.current) sessionStartRef.current = nowTime();
       intervalRef.current = setInterval(() => {
         setTimerData(prev => {
-          if (prev.timeRemaining <= 1) { clearInterval(intervalRef.current!); handleSessionComplete(prev, config); return prev; }
+          if (prev.timeRemaining <= 1) {
+            clearInterval(intervalRef.current!);
+            skipToNext(prev, config, true);
+            return prev;
+          }
           return { ...prev, timeRemaining: prev.timeRemaining - 1 };
         });
       }, 1000);
@@ -223,8 +271,27 @@ export default function PomodoroApp() {
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [timerData.state, config, handleSessionComplete]);
+  }, [timerData.state, config, skipToNext]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        setTimerData(p => ({ ...p, state: p.state === "running" ? "paused" : "running" }));
+      } else if (e.key === "r" || e.key === "R") {
+        setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
+      } else if (e.key === "n" || e.key === "N") {
+        setTimerData(p => { skipToNext(p, config, false); return p; });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [config, skipToNext]);
+
+  // Tab title
   useEffect(() => {
     const m = Math.floor(timerData.timeRemaining / 60).toString().padStart(2, "0");
     const s = (timerData.timeRemaining % 60).toString().padStart(2, "0");
@@ -240,10 +307,7 @@ export default function PomodoroApp() {
   const handleStart = () => setTimerData(p => ({ ...p, state: "running" }));
   const handlePause = () => setTimerData(p => ({ ...p, state: "paused" }));
   const handleStop  = () => setTimerData(p => ({ ...p, state: "idle", timeRemaining: p.totalTime }));
-  const handleReset = () => {
-    const dur = timerData.currentSession === "work" ? config.workDuration : timerData.currentSession === "short-break" ? config.shortBreakDuration : config.longBreakDuration;
-    setTimerData(p => ({ ...p, timeRemaining: dur, totalTime: dur, state: "idle" }));
-  };
+  const handleReset = () => setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
   const handleSaveSettings = (c: TimerConfig) => {
     setConfig(c);
     if (timerData.state === "idle") {
@@ -253,18 +317,16 @@ export default function PomodoroApp() {
   };
 
   const handleClearHistory = () => { clearHistory(); setHistory([]); };
-
   const cycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#07070f" }}>
 
-      {/* Atmospheric glow blobs */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
         background: `
-          radial-gradient(ellipse 55% 35% at 15% 85%, rgba(255,255,255,0.014) 0%, transparent 60%),
-          radial-gradient(ellipse 45% 30% at 85% 15%, rgba(255,255,255,0.01) 0%, transparent 60%)
+          radial-gradient(ellipse 55% 35% at 15% 85%, rgba(255,255,255,0.012) 0%, transparent 60%),
+          radial-gradient(ellipse 45% 30% at 85% 15%, rgba(255,255,255,0.009) 0%, transparent 60%)
         `,
       }} />
 
@@ -284,19 +346,14 @@ export default function PomodoroApp() {
         <div className="flex items-center gap-2.5">
           <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSettings(true)}  testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
-          <button
-            onClick={() => setShowSidebar(true)}
-            data-testid="button-sidebar"
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.85)" }}
-          >
+          <HBtn onClick={() => setShowSidebar(true)}   testId="button-sidebar" highlighted>
             <Flame className="w-4 h-4" />
-          </button>
+          </HBtn>
         </div>
       </header>
 
       {/* ── Main ── */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 py-8 gap-8 max-w-lg mx-auto w-full">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 py-6 gap-7 max-w-lg mx-auto w-full">
 
         {/* Session tabs */}
         <div className="flex gap-1 p-1 rounded-full animate-fade-in-down delay-100"
@@ -327,6 +384,11 @@ export default function PomodoroApp() {
             currentSession={timerData.currentSession} state={timerData.state} />
         </div>
 
+        {/* Motivational quote — shows while running */}
+        <div className="w-full transition-all duration-500" style={{ opacity: timerData.state === "running" ? 1 : 0.35 }}>
+          <QuoteDisplay running={timerData.state === "running"} sessionIndex={completedCount} />
+        </div>
+
         {/* Controls */}
         <div className="animate-fade-in-up delay-300">
           <ControlButtons state={timerData.state} onStart={handleStart} onPause={handlePause}
@@ -336,6 +398,19 @@ export default function PomodoroApp() {
         {/* Stats */}
         <SessionStats sessionsCompleted={timerData.sessionsCompleted} currentCycle={cycle}
           totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayData.mins} className="w-full" />
+
+        {/* Keyboard shortcut hint */}
+        <div className="flex items-center gap-4">
+          {[["Space","Play/Pause"],["R","Reset"],["N","Skip"]].map(([key, label]) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 rounded text-xs"
+                style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
+                {key}
+              </kbd>
+              <span style={{ fontSize: "10px", fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.28)" }}>{label}</span>
+            </div>
+          ))}
+        </div>
       </main>
 
       {/* ── Badge unlock toast ── */}
@@ -355,7 +430,7 @@ export default function PomodoroApp() {
         );
       })()}
 
-      {/* ── Sidebar: Streak + Badges + History ── */}
+      {/* ── Sidebar ── */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
         <SheetContent side="right"
           className="w-full sm:w-[400px] flex flex-col overflow-hidden border-none p-0"
@@ -363,31 +438,22 @@ export default function PomodoroApp() {
             background: "rgba(5,5,14,0.92)", backdropFilter: "blur(48px)", WebkitBackdropFilter: "blur(48px)",
             borderLeft: "1px solid rgba(255,255,255,0.1)", boxShadow: "-24px 0 64px rgba(0,0,0,0.7)",
           }}>
-
-          {/* Visually hidden title for accessibility */}
           <SheetTitle className="sr-only">Progress — Streaks & Achievements</SheetTitle>
           <SheetDescription className="sr-only">View your focus streaks, achievement badges, and session history.</SheetDescription>
 
-          {/* Sidebar header */}
-          <div className="px-6 pt-8 pb-5 flex-shrink-0"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="px-6 pt-8 pb-5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <h2 className="text-sm font-semibold tracking-[0.3em] uppercase"
-              style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>
-              Progress
-            </h2>
+              style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>Progress</h2>
             <p className="text-xs tracking-[0.18em] uppercase mt-1"
-              style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>
-              Streaks & Achievements
-            </p>
+              style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Streaks & Achievements</p>
 
-            {/* Tabs */}
             <div className="flex gap-1 mt-4 p-1 rounded-full"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
               <SidebarTab active={sidebarTab === "progress"} onClick={() => setSidebarTab("progress")}>Progress</SidebarTab>
               <SidebarTab active={sidebarTab === "history"}  onClick={() => setSidebarTab("history")}>
-                History {history.filter(r => r.sessionType === "work").length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px]"
-                    style={{ background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)" }}>
+                History
+                {history.filter(r => r.sessionType === "work").length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full" style={{ fontSize: "9px", background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)" }}>
                     {history.filter(r => r.sessionType === "work").length}
                   </span>
                 )}
@@ -395,9 +461,7 @@ export default function PomodoroApp() {
             </div>
           </div>
 
-          {/* Sidebar body */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-
             {sidebarTab === "progress" && (
               <>
                 {/* All-time focus */}
@@ -410,9 +474,7 @@ export default function PomodoroApp() {
                       {totalMins >= 60 ? `${Math.floor(totalMins / 60)}h ${totalMins % 60}m` : `${totalMins}m`}
                     </div>
                     <div className="text-xs font-semibold tracking-[0.22em] uppercase mt-2"
-                      style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>
-                      Total Focused
-                    </div>
+                      style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>Total Focused</div>
                   </div>
                 </div>
 
@@ -423,28 +485,32 @@ export default function PomodoroApp() {
                     todaySessions={todayData.sessions} dailyGoal={8} />
                 </div>
 
+                {/* Activity heatmap */}
+                <div className="space-y-3">
+                  <SLabel>Activity — Last 7 Weeks</SLabel>
+                  <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <WeeklyHeatmap history={history} />
+                  </div>
+                </div>
+
                 {/* Badges */}
                 <div className="space-y-3">
                   <SLabel>Achievement Badges</SLabel>
                   <p className="text-xs leading-relaxed"
                     style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>
-                    Tap an unlocked badge to view and download it as an image.
+                    Tap an unlocked badge to view and download it.
                   </p>
                   <Badges totalMinutes={totalMins} earnedBadgeIds={earnedBadges} newlyUnlocked={newBadge} />
 
-                  {/* Milestone progress list */}
-                  <div className="space-y-2 pt-2">
+                  {/* Milestone list */}
+                  <div className="space-y-2 pt-1">
                     {BADGE_MILESTONES.map(b => {
                       const earned = earnedBadges.includes(b.id);
                       const pct    = Math.min((totalMins / b.minutesRequired) * 100, 100);
                       return (
                         <div key={b.id} className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
-                          style={{
-                            background: earned ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                            border: `1px solid ${earned ? b.glow : "rgba(255,255,255,0.08)"}`,
-                          }}>
-                          <div className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ background: earned ? b.color : "rgba(255,255,255,0.2)" }} />
+                          style={{ background: earned ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${earned ? b.glow : "rgba(255,255,255,0.08)"}` }}>
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: earned ? b.color : "rgba(255,255,255,0.2)" }} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-semibold tracking-[0.1em]"
@@ -487,10 +553,8 @@ export default function PomodoroApp() {
             background: "rgba(5,5,14,0.94)", backdropFilter: "blur(48px)", WebkitBackdropFilter: "blur(48px)",
             borderLeft: "1px solid rgba(255,255,255,0.1)", boxShadow: "-24px 0 64px rgba(0,0,0,0.7)",
           }}>
-
           <SheetTitle className="sr-only">Analytics — Productivity Overview</SheetTitle>
-          <SheetDescription className="sr-only">View your focus session analytics and productivity trends.</SheetDescription>
-
+          <SheetDescription className="sr-only">Focus session analytics and productivity trends.</SheetDescription>
           <div className="px-6 pt-8 pb-5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <h2 className="text-sm font-semibold tracking-[0.3em] uppercase"
               style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>Analytics</h2>
@@ -504,7 +568,7 @@ export default function PomodoroApp() {
       {/* ── Settings overlay ── */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(14px)" }}
+          style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
           <div className="animate-scale-in">
             <SettingsPanel config={config} onSave={handleSaveSettings} onClose={() => setShowSettings(false)} />

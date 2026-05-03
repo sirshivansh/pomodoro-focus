@@ -66,6 +66,8 @@ export interface TimerConfig {
   longBreakDuration: number;
   sessionsUntilLongBreak: number;
   soundEnabled: boolean;
+  autoStart: boolean;
+  notificationsEnabled: boolean;
 }
 
 export interface TimerData {
