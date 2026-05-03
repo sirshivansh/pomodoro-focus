@@ -3,9 +3,17 @@ import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Users table for authentication
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+});
+
 // Pomodoro session tracking
 export const pomodoroSessions = pgTable("pomodoro_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // "work", "short-break", "long-break"
   duration: integer("duration").notNull(), // in seconds
   completed: boolean("completed").notNull().default(false),
@@ -16,6 +24,7 @@ export const pomodoroSessions = pgTable("pomodoro_sessions", {
 // User settings for timer customization  
 export const pomodoroSettings = pgTable("pomodoro_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
   workDuration: integer("work_duration").notNull().default(1500), // 25 minutes in seconds
   shortBreakDuration: integer("short_break_duration").notNull().default(300), // 5 minutes
   longBreakDuration: integer("long_break_duration").notNull().default(900), // 15 minutes
@@ -26,6 +35,7 @@ export const pomodoroSettings = pgTable("pomodoro_settings", {
 // Streak tracking for motivation
 export const streakData = pgTable("streak_data", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
   currentStreak: integer("current_streak").notNull().default(0),
   longestStreak: integer("longest_streak").notNull().default(0),
   lastSessionDate: timestamp("last_session_date"),
@@ -33,20 +43,27 @@ export const streakData = pgTable("streak_data", {
 });
 
 // Zod schemas for validation
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertPomodoroSessionSchema = createInsertSchema(pomodoroSessions).omit({
   id: true,
   endTime: true,
+  userId: true, // we handle this on the server
 });
 
 export const insertPomodoroSettingsSchema = createInsertSchema(pomodoroSettings).omit({
   id: true,
+  userId: true,
 });
 
 export const insertStreakDataSchema = createInsertSchema(streakData).omit({
   id: true,
+  userId: true,
 });
 
 // Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
 export type InsertPomodoroSession = z.infer<typeof insertPomodoroSessionSchema>;
 export type PomodoroSession = typeof pomodoroSessions.$inferSelect;
 

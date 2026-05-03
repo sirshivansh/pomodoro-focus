@@ -1,45 +1,25 @@
 import { Clock, Target, Trash2 } from "lucide-react";
+import { PomodoroSession } from "@shared/schema";
 
-export interface SessionRecord {
-  id: string;
-  date: string;       // YYYY-MM-DD
-  startTime: string;  // HH:MM
-  durationMins: number;
-  focusGoal: string;
-  sessionType: "work" | "short-break" | "long-break";
-}
-
-export const HISTORY_KEY = "ft_history";
-const MAX_HISTORY = 150;
-
-export function saveSessionToHistory(record: Omit<SessionRecord, "id">) {
-  try {
-    const existing: SessionRecord[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-    const updated = [{ ...record, id: `${Date.now()}` }, ...existing].slice(0, MAX_HISTORY);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-  } catch {}
-}
-
-export function loadHistory(): SessionRecord[] {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
-}
-
-export function clearHistory() { localStorage.removeItem(HISTORY_KEY); }
+// Note: clearHistory and saveHistory removed as they use API now.
 
 function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  if (dateStr === today) return "Today";
-  if (dateStr === yesterday) return "Yesterday";
-  const d = new Date(dateStr);
+  const target = d.toISOString().slice(0, 10);
+
+  if (target === today) return "Today";
+  if (target === yesterday) return "Yesterday";
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function groupByDate(records: SessionRecord[]): { date: string; items: SessionRecord[] }[] {
-  const map = new Map<string, SessionRecord[]>();
+function groupByDate(records: PomodoroSession[]): { date: string; items: PomodoroSession[] }[] {
+  const map = new Map<string, PomodoroSession[]>();
   for (const r of records) {
-    if (!map.has(r.date)) map.set(r.date, []);
-    map.get(r.date)!.push(r);
+    const dStr = new Date(r.startTime).toISOString().slice(0, 10);
+    if (!map.has(dStr)) map.set(dStr, []);
+    map.get(dStr)!.push(r);
   }
   return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
 }
@@ -51,12 +31,12 @@ const SESSION_COLOR: Record<string, string> = {
 };
 
 interface HistoryListProps {
-  records: SessionRecord[];
+  records: PomodoroSession[];
   onClear: () => void;
 }
 
 export default function HistoryList({ records, onClear }: HistoryListProps) {
-  if (records.length === 0) {
+  if (!records || records.length === 0) {
     return (
       <div
         className="flex flex-col items-center gap-3 py-10 rounded-2xl text-center"
@@ -75,6 +55,7 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
     );
   }
 
+  // Only show work sessions for history usually, but let's show all
   const groups = groupByDate(records);
 
   return (
@@ -83,7 +64,7 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
       <div className="flex justify-end">
         <button
           onClick={onClear}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all hover:bg-white/10"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)", fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, letterSpacing: "0.08em" }}
         >
           <Trash2 className="w-3 h-3" /> CLEAR ALL
@@ -100,33 +81,27 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
             {formatDate(date)}
           </div>
 
-          {items.filter(r => r.sessionType === "work").map((record) => (
+          {items.filter(r => r.type === "work").map((record) => (
             <div
               key={record.id}
               className="flex items-start gap-3 px-4 py-3 rounded-xl"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
             >
               {/* Color dot */}
-              <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: SESSION_COLOR[record.sessionType] }} />
+              <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: SESSION_COLOR[record.type] }} />
 
               <div className="flex-1 min-w-0">
                 {/* Goal */}
-                {record.focusGoal ? (
-                  <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
-                    {record.focusGoal}
-                  </p>
-                ) : (
-                  <p className="text-sm italic" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.4)" }}>
-                    No focus goal set
-                  </p>
-                )}
+                <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
+                  Focus Session
+                </p>
                 {/* Meta */}
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="flex items-center gap-1 text-xs" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.45)" }}>
-                    <Clock className="w-3 h-3" /> {record.startTime}
+                    <Clock className="w-3 h-3" /> {new Date(record.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <span className="text-xs" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.45)" }}>
-                    {record.durationMins}m
+                    {Math.floor(record.duration / 60)}m
                   </span>
                 </div>
               </div>

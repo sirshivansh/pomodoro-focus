@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
-import { loadHistory, SessionRecord } from "./HistoryList";
+import { useSessions } from "@/hooks/use-sessions";
 
 interface AnalyticsProps { className?: string; }
 type Period = "daily" | "weekly" | "monthly" | "yearly";
+type SessionRecord = any; // We get it from the API now
 
 const fmtTime = (m: number) => { const h = Math.floor(m / 60); return h > 0 ? `${h}h ${m % 60}m` : `${m}m`; };
 
@@ -21,25 +22,26 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   
   if (period === "daily") {
     const today = now.toISOString().slice(0, 10);
-    filtered = records.filter(r => r.date === today);
+    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) === today);
   } else if (period === "weekly") {
     const weekAgo = new Date(now.getTime() - 7 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => r.date >= weekAgo);
+    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= weekAgo);
   } else if (period === "monthly") {
     const monthAgo = new Date(now.getTime() - 30 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => r.date >= monthAgo);
+    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= monthAgo);
   } else if (period === "yearly") {
     const yearAgo = new Date(now.getTime() - 365 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => r.date >= yearAgo);
+    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= yearAgo);
   }
 
-  const workSessions = filtered.filter(r => r.sessionType === "work");
+  const workSessions = filtered.filter(r => r.type === "work");
   const total = workSessions.length;
-  const time = workSessions.reduce((acc, r) => acc + r.durationMins, 0);
+  // duration in DB is seconds, so divide by 60
+  const time = workSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
 
-  const totalAllTime = filtered.reduce((acc, r) => acc + r.durationMins, 0) || 1;
+  const totalAllTime = filtered.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0) || 1;
   const workPct = Math.round((time / totalAllTime) * 100);
-  const shortBreakTime = filtered.filter(r => r.sessionType === "short-break").reduce((acc, r) => acc + r.durationMins, 0);
+  const shortBreakTime = filtered.filter(r => r.type === "short-break").reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
   const shortPct = Math.round((shortBreakTime / totalAllTime) * 100);
   const longPct = Math.max(0, 100 - workPct - shortPct);
 
@@ -48,8 +50,8 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   if (period === "daily") {
     const hours = new Array(24).fill(0);
     workSessions.forEach(r => {
-      const h = parseInt(r.startTime.split(":")[0]);
-      if (!isNaN(h)) hours[h]++;
+      const h = new Date(r.startTime).getHours();
+      hours[h]++;
     });
     const blocks = ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"];
     chart = blocks.map((name, i) => {
@@ -60,14 +62,14 @@ function processAnalytics(records: SessionRecord[], period: Period) {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const counts = new Array(7).fill(0);
     workSessions.forEach(r => {
-      const d = new Date(r.date).getDay();
+      const d = new Date(r.startTime).getDay();
       counts[d]++;
     });
     chart = days.map((name, i) => ({ name, sessions: counts[i] }));
   } else if (period === "monthly") {
     const counts = [0, 0, 0, 0];
     workSessions.forEach(r => {
-      const diff = Math.floor((now.getTime() - new Date(r.date).getTime()) / msPerDay);
+      const diff = Math.floor((now.getTime() - new Date(r.startTime).getTime()) / msPerDay);
       if (diff < 7) counts[3]++;
       else if (diff < 14) counts[2]++;
       else if (diff < 21) counts[1]++;
@@ -83,7 +85,7 @@ function processAnalytics(records: SessionRecord[], period: Period) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const counts = new Array(12).fill(0);
     workSessions.forEach(r => {
-      const m = new Date(r.date).getMonth();
+      const m = new Date(r.startTime).getMonth();
       counts[m]++;
     });
     chart = months.map((name, i) => ({ name, sessions: counts[i] }));
@@ -105,8 +107,8 @@ export default function Analytics({ className }: AnalyticsProps) {
   const [period, setPeriod] = useState<Period>("weekly");
   const periods: Period[] = ["daily", "weekly", "monthly", "yearly"];
   
-  const history = useMemo(() => loadHistory(), [period]); // Recalculate on load or period change
-  const d = useMemo(() => processAnalytics(history, period), [history, period]);
+  const { sessions: history } = useSessions();
+  const d = useMemo(() => processAnalytics(history || [], period), [history, period]);
 
   return (
     <div className={cn("space-y-5", className)}>

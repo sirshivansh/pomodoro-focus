@@ -1,29 +1,42 @@
-# PomoFocusTrack 🍅
+<div align="center">
+  <h1>PomoFocusTrack 🍅</h1>
+  <p><strong>A production-grade, cloud-synchronized Pomodoro productivity suite.</strong></p>
+  <p>
+    Stay focused, track your analytics, and sync your workflow seamlessly across all devices.
+  </p>
+</div>
 
-PomoFocusTrack is a full-stack productivity web application designed to help users manage their time effectively using the Pomodoro Technique. Built with modern web technologies, it features a sleek, agency-grade design, real-time focus tracking, and task management to optimize your workflow.
+<br />
 
-## 🚀 Features
+PomoFocusTrack has evolved from a local-only tool into a **fully authenticated, cloud-backed application**. Built with a sleek, neo-earthen design aesthetic, it features real-time focus tracking and persistent analytics using a robust backend infrastructure.
 
-- **Pomodoro Timer:** Fully customizable focus, short break, and long break intervals.
-- **Task Management:** Create, manage, and track progress on tasks.
-- **Responsive UI:** A beautiful, neo-earthen aesthetic using Tailwind CSS and Framer Motion.
-- **Real-Time Data:** Persistent task and timer states stored securely in a PostgreSQL database.
-- **Full-Stack Architecture:** Powered by a React frontend and an Express/Drizzle backend.
+## ✨ New Features & Upgrades
+
+- ☁️ **Full Cloud Synchronization**: Goodbye `localStorage`! Your pomodoro sessions, streaks, and analytics are now saved directly to the cloud via our REST API.
+- 🔐 **Real User Authentication**: Secure login and registration flows requiring an **Email Address** and password, powered by Passport.js and robust server-side sessions.
+- 👤 **Dynamic Profile Panel**: A newly designed, interactive profile card showing your email, focus statistics, and total time tracked right from the navigation header.
+- 📊 **Centralized Analytics Engine**: Visual heatmaps and history logs are dynamically pulled from the Neon Database, ensuring your productivity data is consistent across every device you log into.
+- ⚡ **Production Ready Backend**: Transitioned to a powerful Neon PostgreSQL Serverless architecture, orchestrated with Drizzle ORM.
+
+---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **Framework:** [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **Routing:** [Wouter](https://github.com/molefrog/wouter)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
-- **State & Data Fetching:** [TanStack React Query](https://tanstack.com/query/latest)
+### Frontend Architecture
+- **Core Framework:** [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **State Management & Caching:** [TanStack React Query](https://tanstack.com/query/latest) (handling auth & session caching)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + custom glassmorphic components
 - **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **Routing:** [Wouter](https://github.com/molefrog/wouter)
 
-### Backend
-- **Server:** [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
+### Backend Architecture
+- **Server Environment:** [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
+- **Authentication:** [Passport.js](https://www.passportjs.org/) (Local Strategy) + `connect-pg-simple` for session persistence
+- **Database Engine:** [Neon Serverless PostgreSQL](https://neon.tech/)
 - **ORM:** [Drizzle ORM](https://orm.drizzle.team/)
-- **Database:** PostgreSQL (Optimized for [Neon Serverless](https://neon.tech/))
-- **Schema Validation:** [Zod](https://zod.dev/)
+- **Validation:** [Zod](https://zod.dev/)
+
+---
 
 ## 💻 Getting Started
 
@@ -44,32 +57,36 @@ Make sure you have [Node.js](https://nodejs.org/) (v20+ recommended) and `npm` i
    ```
 
 3. **Set up Environment Variables:**
-   Create a `.env` file in the root directory and add your required variables. 
+   Create a `.env` file in the root directory and add your database configuration:
    ```env
    DATABASE_URL=postgresql://user:password@hostname/dbname
-   SESSION_SECRET=your_secret_key
+   SESSION_SECRET=your_super_secret_session_key
    ```
 
-4. **Initialize Database (if applicable):**
+4. **Initialize the Database:**
+   Push the schema to your PostgreSQL instance:
    ```bash
    npm run db:push
    ```
 
 ### Running Locally
 
-To start the development server (which concurrently runs both the Vite frontend and Express backend):
+To start the development server (which concurrently runs both the Vite frontend proxy and Express backend API):
 
 ```bash
 npm run dev
 ```
 
-Your app will be running at `http://localhost:5000`.
+Your app will be running at `http://localhost:5000`. 
+**Try creating a new account using an email address to see the cloud-saving in action!**
 
-## 🚢 Deployment
+---
 
-The project is configured for easy deployment on platforms like Render or Railway. 
+## 🚢 Deployment (Render / Railway)
 
-1. **Build the project for production:**
+This project is configured for easy zero-config deployment.
+
+1. **Build the production bundle:**
    ```bash
    npm run build
    ```
@@ -79,6 +96,10 @@ The project is configured for easy deployment on platforms like Render or Railwa
    ```bash
    npm run start
    ```
+
+*(Note: Don't forget to set your `DATABASE_URL` and `SESSION_SECRET` in your hosting provider's environment settings!)*
+
+---
 
 ## 📝 License
 

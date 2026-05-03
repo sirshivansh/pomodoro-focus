@@ -1,8 +1,6 @@
 import { useMemo } from "react";
-import { SessionRecord } from "./HistoryList";
-
 interface WeeklyHeatmapProps {
-  history: SessionRecord[];
+  history: any[];
 }
 
 function getLastNDays(n: number): string[] {
@@ -30,7 +28,10 @@ export default function WeeklyHeatmap({ history }: WeeklyHeatmapProps) {
   const countByDate = useMemo(() => {
     const map: Record<string, number> = {};
     for (const r of history) {
-      if (r.sessionType === "work") map[r.date] = (map[r.date] || 0) + 1;
+      if (r.type === "work") {
+        const dateStr = new Date(r.startTime).toISOString().slice(0, 10);
+        map[dateStr] = (map[dateStr] || 0) + 1;
+      }
     }
     return map;
   }, [history]);

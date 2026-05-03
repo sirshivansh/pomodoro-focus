@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { BarChart3, Settings, Flame } from "lucide-react";
+import { BarChart3, Settings, Flame, LogOut, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
 import SessionStats from "./SessionStats";
 import Analytics from "./Analytics";
 import SettingsPanel from "./SettingsPanel";
+import ProfilePanel from "./ProfilePanel";
 import FocusGoal from "./FocusGoal";
 import StreakCounter from "./StreakCounter";
 import Badges, { BADGE_MILESTONES } from "./Badges";
-import HistoryList, { saveSessionToHistory, loadHistory, clearHistory, SessionRecord } from "./HistoryList";
+import HistoryList from "./HistoryList";
+import { useSessions } from "@/hooks/use-sessions";
+import { useAuth } from "@/hooks/use-auth";
 import QuoteDisplay from "./QuoteDisplay";
 import WeeklyHeatmap from "./WeeklyHeatmap";
 import { SessionType, TimerConfig, TimerData } from "@shared/schema";
@@ -147,6 +150,7 @@ export default function PomodoroApp() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"progress" | "history">("progress");
 
   const [config, setConfig] = useState<TimerConfig>(() => loadConfig());
@@ -156,7 +160,8 @@ export default function PomodoroApp() {
   const [earnedBadges, setEarnedBadges] = useState<string[]>(() => loadBadges());
   const [newBadge, setNewBadge] = useState<string | null>(null);
   const [focusGoal, setFocusGoal] = useState(() => localStorage.getItem(LS.focusGoal) || "");
-  const [history, setHistory] = useState<SessionRecord[]>(() => loadHistory());
+  const { sessions: history, createSession } = useSessions();
+  const { logoutMutation, user } = useAuth();
   const [completedCount, setCompletedCount] = useState(0);
 
   const [timerData, setTimerData] = useState<TimerData>(() => {
@@ -200,14 +205,12 @@ export default function PomodoroApp() {
       if (completed) {
         const durationMins = Math.floor(cfg.workDuration / 60);
         const record = {
-          date: todayStr(),
-          startTime: sessionStartRef.current || nowTime(),
-          durationMins,
-          focusGoal: localStorage.getItem(LS.focusGoal) || "",
-          sessionType: "work" as const,
+          type: "work" as const,
+          duration: cfg.workDuration,
+          completed: true,
+          startTime: new Date(Date.now() - cfg.workDuration * 1000).toISOString(),
         };
-        saveSessionToHistory(record);
-        setHistory(loadHistory());
+        createSession.mutate(record as any);
         setCompletedCount(c => c + 1);
 
         setTodayData(prev => {
@@ -310,7 +313,7 @@ export default function PomodoroApp() {
     }
   };
 
-  const handleClearHistory = () => { clearHistory(); setHistory([]); };
+  const handleClearHistory = () => { /* API clear to be added */ };
   const cycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
   const hasHistory = history.length > 0;
 
@@ -333,6 +336,9 @@ export default function PomodoroApp() {
           <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSettings(true)} testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSidebar(true)} testId="button-sidebar" highlighted><Flame className="w-4 h-4" /></HBtn>
+          <button onClick={() => setShowProfile(true)} className="w-9 h-9 ml-2 rounded-full flex items-center justify-center transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
+            <UserIcon className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -408,7 +414,7 @@ export default function PomodoroApp() {
             <p className="text-xs tracking-[0.18em] uppercase mt-1" style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Streaks & Achievements</p>
             <div className="flex gap-1 mt-4 p-1 rounded-full" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
               <SidebarTab active={sidebarTab === "progress"} onClick={() => setSidebarTab("progress")}>Progress</SidebarTab>
-              <SidebarTab active={sidebarTab === "history"} onClick={() => setSidebarTab("history")}>History{hasHistory && <span className="ml-1 px-1.5 py-0.5 rounded-full" style={{ fontSize: "9px", background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)" }}>{history.filter(r => r.sessionType === "work").length}</span>}</SidebarTab>
+              <SidebarTab active={sidebarTab === "history"} onClick={() => setSidebarTab("history")}>History{hasHistory && <span className="ml-1 px-1.5 py-0.5 rounded-full" style={{ fontSize: "9px", background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)" }}>{history.filter((r: any) => r.type === "work").length}</span>}</SidebarTab>
             </div>
           </div>
 
@@ -468,6 +474,12 @@ export default function PomodoroApp() {
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
           <div className="animate-scale-in"><SettingsPanel config={config} onSave={handleSaveSettings} onClose={() => setShowSettings(false)} /></div>
+        </div>
+      )}
+
+      {showProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowProfile(false); }}>
+          <div className="animate-scale-in w-full max-w-sm flex items-center justify-center"><ProfilePanel onClose={() => setShowProfile(false)} /></div>
         </div>
       )}
     </div>
