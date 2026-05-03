@@ -15,82 +15,54 @@ export default function StreakCounter({ currentStreak, longestStreak, todaySessi
 
   return (
     <div
-      className={cn("rounded-2xl p-5 space-y-4 animate-fade-in-up delay-400", className)}
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        backdropFilter: "blur(20px)",
-      }}
+      className={cn("rounded-2xl p-5 space-y-4", className)}
+      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
     >
       <div className="flex items-center justify-between">
+        {/* Current streak */}
         <div className="flex items-center gap-3">
-          <Flame
-            className="w-4 h-4"
-            style={{ color: currentStreak > 0 ? "rgba(255,165,70,0.9)" : "rgba(255,255,255,0.15)" }}
-          />
+          <Flame className="w-5 h-5" style={{ color: currentStreak > 0 ? "rgba(255,165,70,1)" : "rgba(255,255,255,0.3)" }} />
           <div>
-            <div
-              className="text-2xl font-light"
-              style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.88)" }}
-              data-testid="text-current-streak"
-            >
+            <div className="text-3xl font-light" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.95)" }} data-testid="text-current-streak">
               {currentStreak}
             </div>
-            <div
-              className="text-xs tracking-[0.22em] uppercase"
-              style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 500, color: "rgba(255,255,255,0.22)" }}
-            >
+            <div className="text-xs font-semibold tracking-[0.22em] uppercase mt-0.5" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.55)" }}>
               Day Streak
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Trophy className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.18)" }} />
+        {/* Best streak */}
+        <div className="flex items-center gap-2.5">
+          <Trophy className="w-4 h-4" style={{ color: "rgba(255,255,255,0.4)" }} />
           <div className="text-right">
-            <div
-              className="text-xl font-light"
-              style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.6)" }}
-              data-testid="text-longest-streak"
-            >
+            <div className="text-2xl font-light" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.75)" }} data-testid="text-longest-streak">
               {longestStreak}
             </div>
-            <div
-              className="text-xs tracking-widest uppercase"
-              style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 500, color: "rgba(255,255,255,0.2)" }}
-            >
+            <div className="text-xs font-semibold tracking-widest uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.45)" }}>
               Best
             </div>
           </div>
         </div>
       </div>
 
+      {/* Daily goal */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <span
-            className="text-xs tracking-[0.2em] uppercase"
-            style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 500, color: "rgba(255,255,255,0.25)" }}
-          >
+          <span className="text-xs font-semibold tracking-[0.18em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>
             Daily Goal
           </span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              color: done ? "rgba(100,220,150,0.9)" : "rgba(255,255,255,0.45)",
-            }}
-            data-testid="badge-daily-progress"
-          >
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: done ? "rgba(100,220,150,1)" : "rgba(255,255,255,0.7)" }} data-testid="badge-daily-progress">
             {todaySessions} / {dailyGoal}
           </span>
         </div>
-        <div className="h-px w-full rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
+        <div className="h-1 w-full rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${pct}%`,
-              background: done ? "rgba(100,220,150,0.8)" : "rgba(255,255,255,0.55)",
-              boxShadow: done ? "0 0 6px rgba(100,220,150,0.5)" : "0 0 4px rgba(255,255,255,0.25)",
+              background: done ? "rgba(100,220,150,0.9)" : "rgba(255,255,255,0.7)",
+              boxShadow: done ? "0 0 8px rgba(100,220,150,0.6)" : "0 0 6px rgba(255,255,255,0.4)",
             }}
           />
         </div>
