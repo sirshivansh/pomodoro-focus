@@ -57,63 +57,67 @@ export const BADGE_MILESTONES: BadgeDef[] = [
   }
 ];
 
-function BadgeSvg({ badge, size = 280, showText = true }: { badge: BadgeDef; size?: number; showText?: boolean }) {
+function BadgeSvg({ badge, size = 512, showText = true }: { badge: BadgeDef; size?: number; showText?: boolean }) {
   const cx = size / 2, cy = size / 2;
-  const outerR = size * 0.45, innerR = size * 0.38;
+  const outerR = size * 0.42;
+  const innerR = size * 0.35;
   const hours = badge.minutesRequired / 60;
 
   return (
     <svg id={`badge-svg-${badge.id}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
       <defs>
-        <radialGradient id={`grad-${badge.id}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={badge.color} stopOpacity="0.15" />
+        <radialGradient id={`grad-bg-${badge.id}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={badge.color} stopOpacity="0.2" />
           <stop offset="100%" stopColor="#000" stopOpacity="0" />
         </radialGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
+        <linearGradient id={`grad-ring-${badge.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={badge.color} stopOpacity="1" />
+          <stop offset="50%" stopColor={badge.color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={badge.color} stopOpacity="1" />
+        </linearGradient>
+        <filter id="glow-prio" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation={size * 0.02} result="blur" />
           <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
       </defs>
 
-      {/* Outer Glow */}
-      <circle cx={cx} cy={cy} r={outerR + 2} fill={`url(#grad-${badge.id})`} opacity="0.6" />
-      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.glow} strokeWidth={size * 0.05} opacity="0.2" filter="url(#glow)" />
+      {/* Background Glow */}
+      <circle cx={cx} cy={cy} r={outerR * 1.2} fill={`url(#grad-bg-${badge.id})`} opacity="0.8" />
       
-      {/* Main Ring */}
-      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.ring} strokeWidth={size * 0.008} strokeDasharray={size * 0.02} opacity="0.8" />
+      {/* Outer Ring */}
+      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.color} strokeWidth={size * 0.005} opacity="0.2" />
+      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={`url(#grad-ring-${badge.id})`} strokeWidth={size * 0.015} strokeDasharray={`${size * 0.05} ${size * 0.03}`} opacity="0.8" filter="url(#glow-prio)" />
       
-      {/* Background Plate */}
-      <circle cx={cx} cy={cy} r={innerR} fill="#0a0a14" />
-      <circle cx={cx} cy={cy} r={innerR - 2} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={size * 0.04} />
-      
-      {/* Symbol Container */}
-      <g transform={`translate(${cx - size * 0.12}, ${cy - size * 0.22}) scale(${size / 100})`} stroke={badge.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d={badge.symbol} transform="scale(0.4)" />
+      {/* Main Plate */}
+      <circle cx={cx} cy={cy} r={innerR} fill="#07070c" stroke="rgba(255,255,255,0.05)" strokeWidth={size * 0.01} />
+      <circle cx={cx} cy={cy} r={innerR - size * 0.015} fill="none" stroke={badge.color} strokeWidth="1" opacity="0.1" />
+
+      {/* Symbol - Centered */}
+      <g transform={`translate(${cx}, ${cy - (showText ? size * 0.08 : 0)})`}>
+        <g transform={`scale(${size * 0.012}) translate(-12, -12)`}>
+          <path d={badge.symbol} fill="none" stroke={badge.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow-prio)" />
+        </g>
       </g>
 
       {showText && (
         <g style={{ fontFamily: "'Rajdhani', sans-serif" }}>
-          {/* Badge Name */}
-          <text x={cx} y={cy + size * 0.1} textAnchor="middle" fill={badge.color} fontSize={size * 0.07} fontWeight="700" letterSpacing={size * 0.03} style={{ textShadow: `0 0 10px ${badge.glow}` }}>
+          <text x={cx} y={cy + size * 0.12} textAnchor="middle" fill={badge.color} fontSize={size * 0.08} fontWeight="700" letterSpacing={size * 0.04} style={{ textShadow: `0 0 ${size * 0.02}px ${badge.glow}` }}>
             {badge.name}
           </text>
-          
-          {/* Milestone Text */}
-          <text x={cx} y={cy + size * 0.18} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={size * 0.035} fontWeight="500" letterSpacing={size * 0.01}>
+          <text x={cx} y={cy + size * 0.2} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize={size * 0.03} fontWeight="500" letterSpacing={size * 0.02}>
             {badge.subtitle.toUpperCase()}
           </text>
-
-          {/* Flexible Stats Label */}
-          <g transform={`translate(${cx}, ${cy + size * 0.32})`}>
-            <rect x={-size * 0.22} y={-size * 0.04} width={size * 0.44} height={size * 0.08} rx={size * 0.04} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-            <text textAnchor="middle" y={size * 0.015} fill={badge.color} fontSize={size * 0.03} fontWeight="600" letterSpacing={size * 0.02}>
-              VERIFIED FOCUS: {hours >= 1 ? `${hours}H` : `${badge.minutesRequired}M`}
+          
+          {/* Stat Pill */}
+          <g transform={`translate(${cx}, ${cy + size * 0.3})`}>
+            <rect x={-size * 0.2} y={-size * 0.04} width={size * 0.4} height={size * 0.08} rx={size * 0.04} fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" />
+            <text textAnchor="middle" y={size * 0.015} fill={badge.color} fontSize={size * 0.028} fontWeight="600" letterSpacing={size * 0.02}>
+              VERIFIED FOCUS: {hours >= 1 ? `${Math.floor(hours)}H` : `${badge.minutesRequired}M`}
             </text>
           </g>
-          
-          {/* Brand Tag */}
-          <text x={cx} y={size - size * 0.05} textAnchor="middle" fill="rgba(255,255,255,0.15)" fontSize={size * 0.028} letterSpacing={size * 0.04}>
-            POMOFOCUS TRACK • AUTHENTIC ASSET
+
+          <text x={cx} y={size - size * 0.05} textAnchor="middle" fill="rgba(255,255,255,0.1)" fontSize={size * 0.025} letterSpacing={size * 0.05}>
+            POMOFOCUS TRACK • AUTHENTIC ACHIEVEMENT
           </text>
         </g>
       )}
@@ -122,25 +126,39 @@ function BadgeSvg({ badge, size = 280, showText = true }: { badge: BadgeDef; siz
 }
 
 function downloadBadgePng(badge: BadgeDef) {
-  const size = 600;
-  const svgEl = document.getElementById(`badge-svg-${badge.id}`);
-  if (!svgEl) return;
-  const clone = svgEl.cloneNode(true) as SVGElement;
-  clone.setAttribute("width", String(size)); clone.setAttribute("height", String(size));
-  const svgData = new XMLSerializer().serializeToString(clone);
-  const url = URL.createObjectURL(new Blob([svgData], { type: "image/svg+xml;charset=utf-8" }));
-  const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-  const img = new Image();
-  img.onload = () => {
-    ctx.fillStyle = "#07070f"; ctx.fillRect(0, 0, size, size);
-    ctx.drawImage(img, 0, 0, size, size);
-    URL.revokeObjectURL(url);
-    const link = document.createElement("a");
-    link.download = `focus-badge-${badge.id}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-  };
-  img.src = url;
+  const size = 1024;
+  const svgWrapper = document.createElement("div");
+  // Render a FRESH SVG with showText=true to ensure download has all info
+  import("react-dom/client").then(({ createRoot }) => {
+    const root = createRoot(svgWrapper);
+    root.render(<BadgeSvg badge={badge} size={size} showText={true} />);
+    
+    // Give it a moment to render
+    setTimeout(() => {
+      const svgEl = svgWrapper.querySelector("svg");
+      if (!svgEl) return;
+      
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const url = URL.createObjectURL(new Blob([svgData], { type: "image/svg+xml;charset=utf-8" }));
+      const canvas = document.createElement("canvas");
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      const img = new Image();
+      
+      img.onload = () => {
+        ctx.fillStyle = "#07070f";
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+        const link = document.createElement("a");
+        link.download = `pomo-badge-${badge.id}.png`;
+        link.href = canvas.toDataURL("image/png", 1.0);
+        link.click();
+        root.unmount();
+      };
+      img.src = url;
+    }, 100);
+  });
 }
 
 interface BadgesProps { totalMinutes: number; earnedBadgeIds: string[]; newlyUnlocked?: string | null; className?: string; }
