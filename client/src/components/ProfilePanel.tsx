@@ -7,7 +7,7 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ onClose }: ProfilePanelProps) {
-  const { sessions, isLoading } = useSessions();
+  const { sessions, isLoading, clearSessions } = useSessions();
   const logoutMutation = useAuth().logoutMutation;
   const user = useAuth().user;
 
