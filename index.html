@@ -1439,6 +1439,29 @@
 
                 <div class="space-y-6">
 
+                    <!-- v1.5.2 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#3b82f6,#2563eb);">
+                            <span class="text-[10px] font-bold text-white">1.5.2</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.5.2 — Data Integrity & Badge Clarity</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">LATEST</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Discrepancies in "Today" stats due to timezone shifts and unclear unlock requirements for badges.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Refactored date tracking to use local time strings, added "Total Data" loading skeletons to Profile, and enhanced Badges with descriptive progress percentages and clear unlock instructions.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-blue-500/8 text-blue-400/70 border border-blue-500/10">Fixed: Local-Time Stat Synchronization</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-blue-500/8 text-blue-400/70 border border-blue-500/10">Added: Progress Percentages for Badges</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-blue-500/8 text-blue-400/70 border border-blue-500/10">Added: Loading Skeletons for Profile Stats</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-blue-500/8 text-blue-400/70 border border-blue-500/10">Added: Global History Reset in Profile</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- v1.5.1 -->
                     <div class="relative pl-10 mb-10">
                         <div class="timeline-line"></div>
@@ -1449,7 +1472,6 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-sm font-semibold text-white/70">v1.5.1 — Core Engine Stability</span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">LATEST</span>
                             </div>
                             <p class="text-xs text-white/45 mb-2 font-medium">Faced: Potential data mismatches in streak tracking and redundant audio triggers across multiple browser windows.</p>
                             <p class="text-[11px] text-white/30 mb-3">Overcame: Hardened the timing engine with absolute session start-time tracking, derived streaks directly from database records, and optimized cross-window synchronization to prevent audio ghosting.</p>

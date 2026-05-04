@@ -7,10 +7,10 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ onClose }: ProfilePanelProps) {
-  const { user, logoutMutation } = useAuth();
-  const { sessions } = useSessions();
+  const { sessions, isLoading } = useSessions();
+  const logoutMutation = useAuth().logoutMutation;
+  const user = useAuth().user;
 
-  const totalSessions = sessions ? sessions.length : 0;
   const workSessions = sessions ? sessions.filter((r: any) => r.type === "work").length : 0;
   const totalMins = sessions ? sessions.filter((r: any) => r.type === "work").reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0) : 0;
 
@@ -38,30 +38,59 @@ export default function ProfilePanel({ onClose }: ProfilePanelProps) {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 w-full mb-8">
           <div className="p-4 rounded-2xl flex flex-col items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{workSessions}</div>
+            {isLoading ? (
+              <div className="h-8 w-12 rounded bg-white/5 animate-pulse mb-1" />
+            ) : (
+              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{workSessions}</div>
+            )}
             <div className="text-[10px] font-semibold tracking-widest uppercase text-white/40" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Focus Sessions</div>
           </div>
           <div className="p-4 rounded-2xl flex flex-col items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{totalMins >= 60 ? `${Math.floor(totalMins / 60)}h` : `${totalMins}m`}</div>
+            {isLoading ? (
+              <div className="h-8 w-12 rounded bg-white/5 animate-pulse mb-1" />
+            ) : (
+              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{totalMins >= 60 ? `${Math.floor(totalMins / 60)}h` : `${totalMins}m`}</div>
+            )}
             <div className="text-[10px] font-semibold tracking-widest uppercase text-white/40" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Total Time</div>
           </div>
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={() => logoutMutation.mutate()}
-          className="w-full h-12 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:bg-white/10"
-          style={{
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.7)",
-            fontFamily: "'Rajdhani',sans-serif",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase"
-          }}
-        >
-          <LogOut className="w-4 h-4" /> Sign Out
-        </button>
+        {/* Actions */}
+        <div className="flex flex-col gap-2 w-full">
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to delete all focus history? This cannot be undone.")) {
+                clearSessions.mutate();
+              }
+            }}
+            className="w-full h-11 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:bg-red-500/10"
+            style={{
+              border: "1px solid rgba(255,255,255,0.05)",
+              color: "rgba(255,255,255,0.3)",
+              fontFamily: "'Rajdhani',sans-serif",
+              fontWeight: 500,
+              fontSize: "12px",
+              letterSpacing: "0.05em",
+              textTransform: "uppercase"
+            }}
+          >
+            Clear Focus History
+          </button>
+          <button
+            onClick={() => logoutMutation.mutate()}
+            className="w-full h-12 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:bg-white/10"
+            style={{
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "'Rajdhani',sans-serif",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase"
+            }}
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
       </div>
     </div>
   );

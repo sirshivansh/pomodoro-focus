@@ -38,7 +38,10 @@ const LS = {
   config: "ft_config",
 };
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function todayStr() { 
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function nowTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 
 function loadStreak() {
@@ -252,14 +255,19 @@ export default function PomodoroApp() {
 
   const todayStats = useMemo(() => {
     const today = todayStr();
-    const todaySessions = historyRaw.filter((r: any) => 
-      r.type === "work" && 
-      new Date(r.startTime).toISOString().slice(0, 10) === today
-    );
+    const todaySessions = historyRaw.filter((r: any) => {
+      const d = new Date(r.startTime);
+      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      return r.type === "work" && ds === today;
+    });
     return {
       sessions: todaySessions.length,
       mins: todaySessions.reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0)
     };
+  }, [historyRaw]);
+
+  const displayTotalSessions = useMemo(() => {
+    return historyRaw.filter((r: any) => r.type === "work").length;
   }, [historyRaw]);
 
   const displayTotalMins = useMemo(() => {
@@ -623,7 +631,7 @@ export default function PomodoroApp() {
             <ControlButtons state={timerData.state} onStart={handleStart} onPause={handlePause} onStop={handleStop} onReset={handleReset} onSettings={() => setShowSettings(true)} />
           </div>
 
-          <SessionStats sessionsCompleted={timerData.sessionsCompleted} currentCycle={cycle} totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayStats.mins} className="w-full max-w-3xl" />
+          <SessionStats sessionsCompleted={todayStats.sessions} currentCycle={cycle} totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayStats.mins} className="w-full max-w-3xl" />
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {[["Space", "Play/Pause"], ["R", "Reset"], ["N", "Skip"]].map(([key, label]) => (
