@@ -306,6 +306,7 @@ export default function PomodoroApp() {
   const sessionStartRef = useRef<string>("");
   const sessionTrueStartRef = useRef<string>("");
   const transitioningRef = useRef(false);
+  const autoStartRef = useRef(config.autoStart);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   const handleStart = useCallback(() => {
