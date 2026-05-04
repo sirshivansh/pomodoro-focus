@@ -14,6 +14,18 @@ export default function MiniTimer() {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
+  // Shared Audio Context for robustness
+  let sharedAudioCtx: AudioContext | null = null;
+  function getAudioCtx() {
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (sharedAudioCtx.state === "suspended") {
+      sharedAudioCtx.resume();
+    }
+    return sharedAudioCtx;
+  }
+
   function announce(text: string) {
     if (!audioEnabled) return;
     try {
@@ -28,7 +40,7 @@ export default function MiniTimer() {
   function playClockSound(type: "start" | "tick") {
     if (!audioEnabled) return;
     try {
-      const ctx = new AudioContext();
+      const ctx = getAudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -54,10 +66,11 @@ export default function MiniTimer() {
     channel.onmessage = (event) => {
       if (event.data.type === "TICK" || event.data.type === "STATE_UPDATE") {
         const newData = event.data.payload;
+        const skipAudio = event.data.payload?.skipAudio;
         
         setTimerData(prev => {
-          // Trigger sounds if state changed to running
-          if (prev.state !== "running" && newData.state === "running") {
+          // Trigger sounds if state changed to running and not explicitly skipped
+          if (prev.state !== "running" && newData.state === "running" && !skipAudio) {
             playClockSound("start");
             announce(newData.currentSession === "work" ? "Focus session started" : "Break time started");
           }
@@ -74,14 +87,14 @@ export default function MiniTimer() {
     return () => {
       channel.close();
     };
-  }, [audioEnabled]); // Removed timerData to prevent infinite loop
+  }, [audioEnabled]);
 
   const sendCommand = (type: string) => {
     channelRef.current?.postMessage({ type: "COMMAND", action: type });
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center relative select-none group" onClick={() => { if (!audioEnabled) setAudioEnabled(true); }}>
+    <div className="h-screen w-screen flex flex-col items-center justify-center relative select-none group" onClick={() => { if (!audioEnabled) { setAudioEnabled(true); getAudioCtx(); } }}>
       {!audioEnabled && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm cursor-pointer">
           <div className="px-4 py-2 rounded-full border border-white/20 bg-white/5 text-[10px] tracking-[0.2em] font-bold text-white/80 uppercase animate-pulse">

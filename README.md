@@ -7,6 +7,16 @@
 
 **PomoFocusTrack** is a production-grade, cloud-synchronized Pomodoro productivity suite. Built with an agency-grade design philosophy, it bridges the gap between aesthetic beauty and high-performance functionality.
 
+## 💎 The "Achievement Ascension" & "Engine Hardening" Update (v1.5.1)
+
+Our most ambitious update yet, focusing on visual prestige and data-driven reliability.
+
+- 🏆 **Premium Badge System**: A complete redesign of the achievement system featuring high-fidelity glassmorphism SVG iconography and "Verified Focus" milestone labels.
+- 🌌 **Zenith Achievements**: New ultra-rare badges for hitting massive focus milestones up to 1,000 hours.
+- 🔒 **Engine Hardening**: Implemented absolute session start-time tracking (`sessionTrueStartRef`) and derived streaks directly from database history for 100% data integrity.
+- 📡 **Intelligent Audio Sync**: Refactored cross-window synchronization with advanced broadcast logic to prevent audio "ghosting" when multiple windows are open.
+- 📊 **Dynamic Data-Sync**: Replaced all legacy stat overrides with real-time derivation from actual focus records.
+
 ---
 
 ## 🛡️ The "Reliability Guard" Update (v1.3.0)

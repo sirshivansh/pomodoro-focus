@@ -10,35 +10,112 @@ export interface BadgeDef {
 }
 
 export const BADGE_MILESTONES: BadgeDef[] = [
-  { id: "genesis",   name: "GENESIS",   subtitle: "1 Hour of Focus",   minutesRequired: 60,   color: "#60C7D4", glow: "rgba(96,199,212,0.45)",  ring: "rgba(96,199,212,0.9)"  },
-  { id: "momentum",  name: "MOMENTUM",  subtitle: "2 Hours of Focus",  minutesRequired: 120,  color: "#9B7FE8", glow: "rgba(155,127,232,0.45)", ring: "rgba(155,127,232,0.9)" },
-  { id: "deepwork",  name: "DEEP WORK", subtitle: "4 Hours of Focus",  minutesRequired: 240,  color: "#4ECBA8", glow: "rgba(78,203,168,0.45)",  ring: "rgba(78,203,168,0.9)"  },
-  { id: "halfday",   name: "HALF DAY",  subtitle: "6 Hours of Focus",  minutesRequired: 360,  color: "#F4A261", glow: "rgba(244,162,97,0.45)",  ring: "rgba(244,162,97,0.9)"  },
-  { id: "endurance", name: "ENDURANCE", subtitle: "8 Hours of Focus",  minutesRequired: 480,  color: "#E07EA3", glow: "rgba(224,126,163,0.45)", ring: "rgba(224,126,163,0.9)" },
-  { id: "dedicated", name: "DEDICATED", subtitle: "10 Hours of Focus", minutesRequired: 600,  color: "#7B9EF4", glow: "rgba(123,158,244,0.45)", ring: "rgba(123,158,244,0.9)" },
-  { id: "marathon",  name: "MARATHON",  subtitle: "12 Hours of Focus", minutesRequired: 720,  color: "#F0C040", glow: "rgba(240,192,64,0.5)",   ring: "rgba(240,192,64,0.95)" },
-  { id: "legendary", name: "LEGENDARY", subtitle: "24 Hours of Focus", minutesRequired: 1440, color: "#FFFFFF",  glow: "rgba(255,255,255,0.5)",  ring: "rgba(255,255,255,1)"   },
+  { 
+    id: "genesis",   name: "THE SPARK",   subtitle: "Initiated the Journey",   minutesRequired: 60,   
+    color: "#60C7D4", glow: "rgba(96,199,212,0.4)",  ring: "rgba(96,199,212,0.8)",
+    symbol: "M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" 
+  },
+  { 
+    id: "momentum",  name: "MOMENTUM",  subtitle: "Building the Habit",  minutesRequired: 300,  
+    color: "#9B7FE8", glow: "rgba(155,127,232,0.4)", ring: "rgba(155,127,232,0.8)",
+    symbol: "M13 10V3L4 14H11V21L20 10H13Z" 
+  },
+  { 
+    id: "deepwork",  name: "DEEP DIVER", subtitle: "Focused Execution",  minutesRequired: 600,  
+    color: "#4ECBA8", glow: "rgba(78,203,168,0.4)",  ring: "rgba(78,203,168,0.8)",
+    symbol: "M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12" 
+  },
+  { 
+    id: "unstoppable", name: "UNSTOPPABLE", subtitle: "25 Hours of Grit", minutesRequired: 1500, 
+    color: "#F4A261", glow: "rgba(244,162,97,0.4)",  ring: "rgba(244,162,97,0.8)",
+    symbol: "M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22ZM12 6V12L16 14"
+  },
+  { 
+    id: "mastery", name: "MASTER FOCUS", subtitle: "50 Hours Milestone", minutesRequired: 3000, 
+    color: "#E07EA3", glow: "rgba(224,126,163,0.4)", ring: "rgba(224,126,163,0.8)",
+    symbol: "M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15ZM12 15V22M12 9V2M15 12H22M9 12H2"
+  },
+  { 
+    id: "monkmode", name: "MONK MODE", subtitle: "100 Hours of Silence", minutesRequired: 6000, 
+    color: "#7B9EF4", glow: "rgba(123,158,244,0.4)", ring: "rgba(123,158,244,0.8)",
+    symbol: "M12 3L4 9V21H20V9L12 3ZM12 18C10.3431 18 9 16.6569 9 15C9 13.3431 10.3431 12 12 12C13.6569 12 15 13.3431 15 15C15 16.6569 13.6569 18 12 18Z"
+  },
+  { 
+    id: "marathon",  name: "ELITE VOID",  subtitle: "250 Hours of Void", minutesRequired: 15000, 
+    color: "#F0C040", glow: "rgba(240,192,64,0.4)",   ring: "rgba(240,192,64,0.8)",
+    symbol: "M7 12C7 10.3431 8.34315 9 10 9C11.6569 9 13 10.3431 13 12C13 13.6569 11.6569 15 10 15C8.34315 15 7 13.6569 7 12ZM11 12C11 13.6569 12.3431 15 14 15C15.6569 15 17 13.6569 17 12C17 10.3431 15.6569 9 14 9C12.3431 9 11 10.3431 11 12Z"
+  },
+  { 
+    id: "godmode", name: "FOCUS GOD", subtitle: "500 Hours Ascended", minutesRequired: 30000, 
+    color: "#FFFFFF",  glow: "rgba(255,255,255,0.45)",  ring: "rgba(255,255,255,1)",
+    symbol: "M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z"
+  },
+  { 
+    id: "zenith", name: "ZENITH", subtitle: "1000 Hours Achievement", minutesRequired: 60000, 
+    color: "#FFD700",  glow: "rgba(255,215,0,0.5)",  ring: "rgba(255,215,0,1)",
+    symbol: "M12 1L9 9L1 12L9 15L12 23L15 15L23 12L15 9L12 1Z"
+  }
 ];
 
 function BadgeSvg({ badge, size = 280, showText = true }: { badge: BadgeDef; size?: number; showText?: boolean }) {
   const cx = size / 2, cy = size / 2;
-  const outerR = size * 0.44, innerR = size * 0.36;
+  const outerR = size * 0.45, innerR = size * 0.38;
+  const hours = badge.minutesRequired / 60;
+
   return (
-    <svg id={`badge-svg-${badge.id}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
-      <rect width={size} height={size} fill="#07070f" rx="0" />
-      <circle cx={cx} cy={cy} r={outerR + 4} fill="none" stroke={badge.glow} strokeWidth="14" opacity="0.25" />
-      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.ring} strokeWidth="1.5" opacity="0.7" />
-      <circle cx={cx} cy={cy} r={innerR} fill="#0d0d1a" />
-      <circle cx={cx} cy={cy} r={innerR} fill="none" stroke={badge.ring} strokeWidth="1" opacity="0.85" />
-      <g transform={`translate(${cx - 12},${cy - 26}) scale(1)`} stroke={badge.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d={badge.symbol} />
+    <svg id={`badge-svg-${badge.id}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
+      <defs>
+        <radialGradient id={`grad-${badge.id}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={badge.color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Outer Glow */}
+      <circle cx={cx} cy={cy} r={outerR + 2} fill={`url(#grad-${badge.id})`} opacity="0.6" />
+      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.glow} strokeWidth={size * 0.05} opacity="0.2" filter="url(#glow)" />
+      
+      {/* Main Ring */}
+      <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.ring} strokeWidth={size * 0.008} strokeDasharray={size * 0.02} opacity="0.8" />
+      
+      {/* Background Plate */}
+      <circle cx={cx} cy={cy} r={innerR} fill="#0a0a14" />
+      <circle cx={cx} cy={cy} r={innerR - 2} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={size * 0.04} />
+      
+      {/* Symbol Container */}
+      <g transform={`translate(${cx - size * 0.12}, ${cy - size * 0.22}) scale(${size / 100})`} stroke={badge.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={badge.symbol} transform="scale(0.4)" />
       </g>
+
       {showText && (
-        <>
-          <text x={cx} y={cy + size * 0.12} textAnchor="middle" fill={badge.color} fontSize={size * 0.055} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.02}>{badge.name}</text>
-          <text x={cx} y={cy + size * 0.22} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize={size * 0.038} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.008}>{badge.subtitle}</text>
-          <text x={cx} y={size - size * 0.07} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={size * 0.032} fontFamily="JetBrains Mono,monospace" letterSpacing={size * 0.008}>FOCUS TIMER</text>
-        </>
+        <g style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+          {/* Badge Name */}
+          <text x={cx} y={cy + size * 0.1} textAnchor="middle" fill={badge.color} fontSize={size * 0.07} fontWeight="700" letterSpacing={size * 0.03} style={{ textShadow: `0 0 10px ${badge.glow}` }}>
+            {badge.name}
+          </text>
+          
+          {/* Milestone Text */}
+          <text x={cx} y={cy + size * 0.18} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={size * 0.035} fontWeight="500" letterSpacing={size * 0.01}>
+            {badge.subtitle.toUpperCase()}
+          </text>
+
+          {/* Flexible Stats Label */}
+          <g transform={`translate(${cx}, ${cy + size * 0.32})`}>
+            <rect x={-size * 0.22} y={-size * 0.04} width={size * 0.44} height={size * 0.08} rx={size * 0.04} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+            <text textAnchor="middle" y={size * 0.015} fill={badge.color} fontSize={size * 0.03} fontWeight="600" letterSpacing={size * 0.02}>
+              VERIFIED FOCUS: {hours >= 1 ? `${hours}H` : `${badge.minutesRequired}M`}
+            </text>
+          </g>
+          
+          {/* Brand Tag */}
+          <text x={cx} y={size - size * 0.05} textAnchor="middle" fill="rgba(255,255,255,0.15)" fontSize={size * 0.028} letterSpacing={size * 0.04}>
+            POMOFOCUS TRACK • AUTHENTIC ASSET
+          </text>
+        </g>
       )}
     </svg>
   );

@@ -52,13 +52,6 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   let shortBreakTime = shortBreakSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
   let longBreakTime = longBreakSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
 
-  // HARD-CODE PATCH (Requested by user to fix loop data)
-  if (period === "daily" || period === "weekly") {
-    if (total > 2) total = 2;
-    if (focusTime > 50) focusTime = 50;
-    if (shortBreakTime > 10) shortBreakTime = 10;
-  }
-
   const totalTime = focusTime + shortBreakTime + longBreakTime;
   
   const workPct = totalTime > 0 ? Math.round((focusTime / totalTime) * 100) : 0;
@@ -113,7 +106,7 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   }
 
   return {
-    chart: chart.map(c => ({ ...c, sessions: Math.min(c.sessions, 2) })),
+    chart: chart,
     total,
     time: focusTime,
     breakdown: [

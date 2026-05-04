@@ -16,7 +16,8 @@ import { useSessions } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import QuoteDisplay from "./QuoteDisplay";
 import WeeklyHeatmap from "./WeeklyHeatmap";
-import { SessionType, TimerConfig, TimerData } from "@shared/schema";
+import { SessionType, TimerConfig, TimerData, PomodoroSession } from "@shared/schema";
+import { startOfDay, subDays, format, isSameDay } from "date-fns";
 
 const DEFAULT_CONFIG: TimerConfig = {
   workDuration: 1500,
@@ -45,9 +46,9 @@ function loadStreak() {
   return { current: 0, best: 0, lastDate: "" };
 }
 function loadToday() {
-  return { sessions: 2, mins: 50, date: todayStr() };
+  return { sessions: 0, mins: 0, date: todayStr() };
 }
-function loadTotalMins() { return 50; }
+function loadTotalMins() { return 0; }
 function loadBadges(): string[] {
   return [];
 }
@@ -59,9 +60,51 @@ function loadConfig(): TimerConfig {
   return DEFAULT_CONFIG;
 }
 
+function deriveStreak(history: PomodoroSession[]) {
+  const workSessions = history.filter(s => s.type === "work");
+  if (workSessions.length === 0) return { current: 0, best: 0, lastDate: "" };
+
+  const dates = Array.from(new Set(workSessions.map(s => startOfDay(new Date(s.startTime)).getTime()))).sort((a, b) => b - a);
+  const today = startOfDay(new Date()).getTime();
+  const yesterday = subDays(new Date(), 1).getTime();
+
+  let current = 0;
+  let best = 0;
+  let temp = 0;
+
+  // Calculate current streak
+  if (dates[0] === today || dates[0] === yesterday) {
+    let checkDate = dates[0];
+    for (let i = 0; i < dates.length; i++) {
+      if (dates[i] === checkDate) {
+        current++;
+        checkDate = subDays(new Date(checkDate), 1).getTime();
+      } else break;
+    }
+  }
+
+  // Calculate best streak
+  const sortedAsc = [...dates].sort((a, b) => a - b);
+  if (sortedAsc.length > 0) {
+    temp = 1;
+    best = 1;
+    for (let i = 1; i < sortedAsc.length; i++) {
+      if (sortedAsc[i] === startOfDay(subDays(new Date(sortedAsc[i-1]), -1)).getTime()) {
+        temp++;
+      } else {
+        best = Math.max(best, temp);
+        temp = 1;
+      }
+    }
+    best = Math.max(best, temp);
+  }
+
+  return { current, best, lastDate: dates[0] ? new Date(dates[0]).toISOString().slice(0, 10) : "" };
+}
+
 function playBeep(type: "work" | "break") {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -107,14 +150,13 @@ function announce(text: string) {
 
 function playClockSound(type: "start" | "tick") {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     if (type === "start") {
-      // Modern startup chime
       osc.type = "sine";
       osc.frequency.setValueAtTime(440, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
@@ -123,7 +165,6 @@ function playClockSound(type: "start" | "tick") {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.8);
     } else {
-      // Subtle tick
       osc.type = "square";
       osc.frequency.setValueAtTime(100, ctx.currentTime);
       gain.gain.setValueAtTime(0.05, ctx.currentTime);
@@ -139,6 +180,18 @@ const SESSION_TABS: { key: SessionType; label: string }[] = [
   { key: "short-break", label: "Short Break" },
   { key: "long-break", label: "Long Break" },
 ];
+
+// Persistent Audio Context for robustness
+let sharedAudioCtx: AudioContext | null = null;
+function getAudioCtx() {
+  if (!sharedAudioCtx) {
+    sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (sharedAudioCtx.state === "suspended") {
+    sharedAudioCtx.resume();
+  }
+  return sharedAudioCtx;
+}
 
 function SLabel({ children }: { children: React.ReactNode }) {
   return <div className="text-xs font-semibold tracking-[0.28em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>{children}</div>;
@@ -188,27 +241,32 @@ export default function PomodoroApp() {
   const [sidebarTab, setSidebarTab] = useState<"progress" | "history">("progress");
 
   const [config, setConfig] = useState<TimerConfig>(() => loadConfig());
-  const [streak, setStreak] = useState(() => loadStreak());
-  const [todayData, setTodayData] = useState(() => loadToday());
-  const [totalMins, setTotalMins] = useState(() => loadTotalMins());
   const [earnedBadges, setEarnedBadges] = useState<string[]>(() => loadBadges());
   const [newBadge, setNewBadge] = useState<string | null>(null);
   const [focusGoal, setFocusGoal] = useState(() => localStorage.getItem(LS.focusGoal) || "");
   const { sessions: historyRaw = [], createSession, clearSessions } = useSessions();
 
-  // HARD-CODE PATCH: Fix history and totals for the loop-fix request
-  const history = useMemo(() => {
-    // If we have more than 4 sessions (glitched loop), show only 2 focus and 2 short breaks
-    if (historyRaw.length > 4) {
-      const focus = historyRaw.filter((r: any) => r.type === "work").slice(0, 2);
-      const breaks = historyRaw.filter((r: any) => r.type === "short-break").slice(0, 2);
-      return [...focus, ...breaks].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-    }
-    return historyRaw;
+  // DERIVED DATA: Calculate from actual session history
+  const history = historyRaw;
+  const streak = useMemo(() => deriveStreak(historyRaw), [historyRaw]);
+
+  const todayStats = useMemo(() => {
+    const today = todayStr();
+    const todaySessions = historyRaw.filter((r: any) => 
+      r.type === "work" && 
+      new Date(r.startTime).toISOString().slice(0, 10) === today
+    );
+    return {
+      sessions: todaySessions.length,
+      mins: todaySessions.reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0)
+    };
   }, [historyRaw]);
 
-  // HARD-CODE PATCH: Force 50 mins display
-  const displayTotalMins = 50;
+  const displayTotalMins = useMemo(() => {
+    return historyRaw
+      .filter((r: any) => r.type === "work")
+      .reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0);
+  }, [historyRaw]);
 
   const handleClearHistory = () => {
     if (window.confirm("Delete all session records and reset progress?")) {
@@ -217,9 +275,6 @@ export default function PomodoroApp() {
           localStorage.removeItem(LS.today);
           localStorage.removeItem(LS.totalMins);
           localStorage.removeItem(LS.streak);
-          setTodayData({ sessions: 0, mins: 0, date: todayStr() });
-          setTotalMins(0);
-          setStreak({ current: 0, best: 0, lastDate: "" });
           toast({ title: "History cleared", description: "All sessions and progress have been reset." });
         }
       });
@@ -237,13 +292,33 @@ export default function PomodoroApp() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const expectedEndTimeRef = useRef<number | null>(null);
+  const timerDataRef = useRef(timerData);
+  useEffect(() => { timerDataRef.current = timerData; }, [timerData]);
+
   const sessionStartRef = useRef<string>("");
-  const autoStartRef = useRef(config.autoStart);
+  const sessionTrueStartRef = useRef<string>("");
   const transitioningRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  const timerDataRef = useRef(timerData);
-  useEffect(() => { timerDataRef.current = timerData; }, [timerData]);
+  const handleStart = useCallback(() => {
+    if (!sessionTrueStartRef.current) sessionTrueStartRef.current = new Date().toISOString();
+    setTimerData(p => ({ ...p, state: "running" }));
+    if (config.soundEnabled) {
+      playClockSound("start");
+      announce(timerData.currentSession === "work" ? "Focus session started" : "Break time started");
+    }
+  }, [config.soundEnabled, timerData.currentSession]);
+
+  const handlePause = useCallback(() => setTimerData(p => ({ ...p, state: "paused" })), []);
+  const handleReset = useCallback(() => {
+    sessionTrueStartRef.current = "";
+    setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
+  }, []);
+
+  const handlersRef = useRef({ start: handleStart, pause: handlePause, reset: handleReset });
+  useEffect(() => {
+    handlersRef.current = { start: handleStart, pause: handlePause, reset: handleReset };
+  }, [handleStart, handlePause, handleReset]);
 
   useEffect(() => {
     channelRef.current = new BroadcastChannel("pomodoro_sync");
@@ -252,21 +327,13 @@ export default function PomodoroApp() {
         channelRef.current?.postMessage({ type: "STATE_UPDATE", payload: timerDataRef.current });
       } else if (event.data.type === "COMMAND") {
         const { action } = event.data;
-        // Using window functions directly to avoid dependency on state/props
-        if (action === "START") {
-          const btn = document.querySelector('[data-testid="button-start"]') as HTMLButtonElement;
-          btn?.click();
-        } else if (action === "PAUSE") {
-          const btn = document.querySelector('[data-testid="button-pause"]') as HTMLButtonElement;
-          btn?.click();
-        } else if (action === "RESET") {
-          const btn = document.querySelector('[data-testid="button-reset"]') as HTMLButtonElement;
-          btn?.click();
-        }
+        if (action === "START") handlersRef.current.start();
+        else if (action === "PAUSE") handlersRef.current.pause();
+        else if (action === "RESET") handlersRef.current.reset();
       }
     };
     return () => channelRef.current?.close();
-  }, []); // Only run once
+  }, []);
 
   useEffect(() => {
     if (channelRef.current) {
@@ -280,8 +347,15 @@ export default function PomodoroApp() {
   useEffect(() => { localStorage.setItem(LS.config, JSON.stringify(config)); }, [config]);
   useEffect(() => { if (config.notificationsEnabled) requestNotificationPermission(); }, [config.notificationsEnabled]);
 
+  // Audio Context unlock on first interaction
   useEffect(() => {
-    const newlyEarned = BADGE_MILESTONES.filter(b => totalMins >= b.minutesRequired && !earnedBadges.includes(b.id));
+    const unlock = () => { getAudioCtx(); window.removeEventListener("mousedown", unlock); };
+    window.addEventListener("mousedown", unlock);
+    return () => window.removeEventListener("mousedown", unlock);
+  }, []);
+
+  useEffect(() => {
+    const newlyEarned = BADGE_MILESTONES.filter(b => displayTotalMins >= b.minutesRequired && !earnedBadges.includes(b.id));
     if (newlyEarned.length > 0) {
       const updated = [...earnedBadges, ...newlyEarned.map(b => b.id)];
       setEarnedBadges(updated);
@@ -291,7 +365,7 @@ export default function PomodoroApp() {
       toast({ title: `Badge Unlocked — ${latest.name}`, description: latest.subtitle });
       setTimeout(() => setNewBadge(null), 4000);
     }
-  }, [totalMins]);
+  }, [displayTotalMins]);
 
   const skipToNext = useCallback((current: TimerData, cfg: TimerConfig, completed: boolean) => {
     if (transitioningRef.current) return;
@@ -308,55 +382,29 @@ export default function PomodoroApp() {
 
       if (completed) {
         const durationMins = Math.floor(cfg.workDuration / 60);
-        const startTimeStr = new Date(Date.now() - cfg.workDuration * 1000).toISOString();
+        // Use true start time if available, otherwise back-calculate
+        const startTime = sessionTrueStartRef.current || new Date(Date.now() - cfg.workDuration * 1000).toISOString();
 
-        console.log(`[Sync] Attempting to save focus session: ${durationMins}m, started at ${startTimeStr}`);
+        console.log(`[Sync] Saving focus session. Duration: ${durationMins}m, Start: ${startTime}`);
 
         const record = {
           type: "work" as const,
           duration: cfg.workDuration,
           completed: true,
-          startTime: startTimeStr,
+          startTime: startTime,
         };
 
         createSession.mutate(record as any, {
           onError: (err) => {
-            console.error("[Sync] Failed to save work session:", err);
-            toast({
-              title: "Cloud Sync Failed",
-              description: "Your session was saved locally but couldn't be synced to the cloud. Please check your connection.",
-              variant: "destructive"
-            });
+            console.error("[Sync] Cloud save failed:", err);
+            toast({ title: "Sync Failed", description: "Session saved locally, will retry later.", variant: "destructive" });
           },
-          onSuccess: (data) => {
-            console.log("[Sync] Work session saved successfully:", data);
-            toast({
-              title: "Session Synced ✨",
-              description: `Successfully saved your ${durationMins}m focus session.`,
-            });
+          onSuccess: () => {
+            toast({ title: "Session Synced ✨", description: `Saved ${durationMins}m focus.` });
           }
         });
 
         setCompletedCount(c => c + 1);
-
-        setTodayData((prev: any) => {
-          const u = { sessions: prev.sessions + 1, mins: prev.mins + durationMins, date: todayStr() };
-          localStorage.setItem(LS.today, JSON.stringify(u)); return u;
-        });
-        setTotalMins(prev => {
-          const u = prev + durationMins;
-          localStorage.setItem(LS.totalMins, String(u)); return u;
-        });
-        setStreak((prev: any) => {
-          const today = todayStr();
-          const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-          let cur = prev.current;
-          if (prev.lastDate === today) { }
-          else if (prev.lastDate === yesterday) cur = prev.current + 1;
-          else cur = 1;
-          const u = { current: cur, best: Math.max(cur, prev.best), lastDate: today };
-          localStorage.setItem(LS.streak, JSON.stringify(u)); return u;
-        });
 
         if (cfg.soundEnabled) playBeep("work");
         if (cfg.notificationsEnabled) sendNotification("Focus session complete!", isLong ? "Time for a long break." : "Take a short break.");
@@ -367,20 +415,15 @@ export default function PomodoroApp() {
       nextSession = "work";
       nextDuration = cfg.workDuration;
       if (completed) {
-        const startTimeStr = new Date(Date.now() - current.totalTime * 1000).toISOString();
+        const startTime = sessionTrueStartRef.current || new Date(Date.now() - current.totalTime * 1000).toISOString();
         const record = {
           type: current.currentSession,
           duration: current.totalTime,
           completed: true,
-          startTime: startTimeStr,
+          startTime: startTime,
         };
         createSession.mutate(record as any, {
-          onError: (err) => {
-            console.error("[Sync] Failed to save break session:", err);
-          },
-          onSuccess: (data) => {
-            console.log("[Sync] Break session saved successfully:", data);
-          }
+          onError: (err) => console.error("[Sync] Break sync failed:", err),
         });
 
         if (cfg.soundEnabled) playBeep("break");
@@ -393,18 +436,26 @@ export default function PomodoroApp() {
     const nextState = autoStartRef.current && completed ? "running" : "idle";
     if (nextState === "running") {
       sessionStartRef.current = nowTime();
+      sessionTrueStartRef.current = new Date().toISOString();
       if (cfg.soundEnabled) {
         playClockSound("start");
         announce(nextSession === "work" ? "Focus session started" : "Break time started");
       }
     } else {
       sessionStartRef.current = "";
+      sessionTrueStartRef.current = "";
     }
 
-    setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
+    const payload = { timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState };
+    setTimerData(payload);
 
-    // Clear guard after state update has likely processed
-    setTimeout(() => { transitioningRef.current = false; }, 1000);
+    // Broadcast the major state change immediately to prevent sync lag
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: "STATE_UPDATE", payload: { ...payload, skipAudio: true } });
+    }
+
+    // Guard reset
+    setTimeout(() => { transitioningRef.current = false; }, 800);
   }, [createSession, toast]);
 
   useEffect(() => {
@@ -469,20 +520,15 @@ export default function PomodoroApp() {
 
   const switchSession = (session: SessionType) => {
     if (timerData.state === "running") return;
+    sessionTrueStartRef.current = "";
     const dur = session === "work" ? config.workDuration : session === "short-break" ? config.shortBreakDuration : config.longBreakDuration;
     setTimerData(prev => ({ ...prev, currentSession: session, timeRemaining: dur, totalTime: dur, state: "idle" }));
   };
 
-  const handleStart = () => {
-    setTimerData(p => ({ ...p, state: "running" }));
-    if (config.soundEnabled) {
-      playClockSound("start");
-      announce(timerData.currentSession === "work" ? "Focus session started" : "Break time started");
-    }
+  const handleStop = () => {
+    sessionTrueStartRef.current = "";
+    setTimerData(p => ({ ...p, state: "idle", timeRemaining: p.totalTime }));
   };
-  const handlePause = () => setTimerData(p => ({ ...p, state: "paused" }));
-  const handleStop = () => setTimerData(p => ({ ...p, state: "idle", timeRemaining: p.totalTime }));
-  const handleReset = () => setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
   const handleSaveSettings = (c: TimerConfig) => {
     setConfig(c);
     if (timerData.state === "idle") {
@@ -577,7 +623,7 @@ export default function PomodoroApp() {
             <ControlButtons state={timerData.state} onStart={handleStart} onPause={handlePause} onStop={handleStop} onReset={handleReset} onSettings={() => setShowSettings(true)} />
           </div>
 
-          <SessionStats sessionsCompleted={timerData.sessionsCompleted} currentCycle={cycle} totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayData.mins} className="w-full max-w-3xl" />
+          <SessionStats sessionsCompleted={timerData.sessionsCompleted} currentCycle={cycle} totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayStats.mins} className="w-full max-w-3xl" />
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {[["Space", "Play/Pause"], ["R", "Reset"], ["N", "Skip"]].map(([key, label]) => (
@@ -631,7 +677,7 @@ export default function PomodoroApp() {
 
                 <div className="space-y-3">
                   <SLabel>Streak</SLabel>
-                  <StreakCounter currentStreak={streak.current} longestStreak={streak.best} todaySessions={todayData.sessions} dailyGoal={8} />
+                  <StreakCounter currentStreak={streak.current} longestStreak={streak.best} todaySessions={todayStats.sessions} dailyGoal={8} />
                 </div>
 
                 <div className="space-y-3">

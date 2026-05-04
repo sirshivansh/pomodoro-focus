@@ -1439,6 +1439,51 @@
 
                 <div class="space-y-6">
 
+                    <!-- v1.5.1 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#10b981,#059669);">
+                            <span class="text-[10px] font-bold text-white">1.5.1</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.5.1 — Core Engine Stability</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">LATEST</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Potential data mismatches in streak tracking and redundant audio triggers across multiple browser windows.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Hardened the timing engine with absolute session start-time tracking, derived streaks directly from database records, and optimized cross-window synchronization to prevent audio ghosting.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Fixed: Database-Derived Streak Logic</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Fixed: Precise Session Start Tracking</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Optimized: Cross-Window Audio Sync</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Improved: AudioContext Interaction Unlock</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- v1.5.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.5</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.5.0 — The Achievement Ascension</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Hardcoded session stats and generic badge visuals that lacked prestige and detail.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Engineered a dynamic data-sync architecture deriving stats from actual history, and redesigned the badge system with premium glassmorphism, custom symbols, and verified focus markers.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Redesigned High-Fidelity Badges</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: 1000-Hour Achievement Milestone</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Fixed: Dynamic Data Sync & Smart Reset</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Improved: Visual Prestige & Asset Labels</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- v1.4.0 -->
                     <div class="relative pl-10 mb-10">
                         <div class="timeline-line"></div>
@@ -1449,7 +1494,6 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-sm font-semibold text-white/70">v1.4.0 — The Stability Shield</span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
                             </div>
                             <p class="text-xs text-white/45 mb-2 font-medium">Faced: Critical blank screen (white-screen-of-death) on startup and server-side type inconsistencies.</p>
                             <p class="text-[11px] text-white/30 mb-3">Overcame: Performed a deep-code audit to restore missing core React imports, enforced strict type safety in session state management, and hardened the Express backend storage layer.</p>
