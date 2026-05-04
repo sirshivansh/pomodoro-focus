@@ -32,7 +32,7 @@ function StatItem({ label, value, sub }: { label: string; value: string; sub?: s
 export default function SessionStats({ sessionsCompleted, currentCycle, totalCycles, timeSpentToday, className }: SessionStatsProps) {
   const h = Math.floor(timeSpentToday / 60);
   const m = timeSpentToday % 60;
-  const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const timeStr = h > 0 ? `${h}h ${m}m` : `${m} min`;
 
   return (
     <div className={cn("flex gap-3", className)}>

@@ -20,22 +20,26 @@ export const BADGE_MILESTONES: BadgeDef[] = [
   { id: "legendary", name: "LEGENDARY", subtitle: "24 Hours of Focus", minutesRequired: 1440, color: "#FFFFFF",  glow: "rgba(255,255,255,0.5)",  ring: "rgba(255,255,255,1)"   },
 ];
 
-function BadgeSvg({ badge, size = 280 }: { badge: BadgeDef; size?: number }) {
+function BadgeSvg({ badge, size = 280, showText = true }: { badge: BadgeDef; size?: number; showText?: boolean }) {
   const cx = size / 2, cy = size / 2;
   const outerR = size * 0.44, innerR = size * 0.36;
   return (
     <svg id={`badge-svg-${badge.id}`} width={size} height={size} viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
       <rect width={size} height={size} fill="#07070f" rx="0" />
-      <circle cx={cx} cy={cy} r={outerR + 4} fill="none" stroke={badge.glow} strokeWidth="14" opacity="0.35" />
+      <circle cx={cx} cy={cy} r={outerR + 4} fill="none" stroke={badge.glow} strokeWidth="14" opacity="0.25" />
       <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={badge.ring} strokeWidth="1.5" opacity="0.7" />
       <circle cx={cx} cy={cy} r={innerR} fill="#0d0d1a" />
       <circle cx={cx} cy={cy} r={innerR} fill="none" stroke={badge.ring} strokeWidth="1" opacity="0.85" />
       <g transform={`translate(${cx - 12},${cy - 26}) scale(1)`} stroke={badge.color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <path d={badge.symbol} />
       </g>
-      <text x={cx} y={cy + size * 0.12} textAnchor="middle" fill={badge.color} fontSize={size * 0.055} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.02}>{badge.name}</text>
-      <text x={cx} y={cy + size * 0.22} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize={size * 0.038} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.008}>{badge.subtitle}</text>
-      <text x={cx} y={size - size * 0.07} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={size * 0.032} fontFamily="JetBrains Mono,monospace" letterSpacing={size * 0.008}>FOCUS TIMER</text>
+      {showText && (
+        <>
+          <text x={cx} y={cy + size * 0.12} textAnchor="middle" fill={badge.color} fontSize={size * 0.055} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.02}>{badge.name}</text>
+          <text x={cx} y={cy + size * 0.22} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize={size * 0.038} fontFamily="JetBrains Mono,monospace" fontWeight="300" letterSpacing={size * 0.008}>{badge.subtitle}</text>
+          <text x={cx} y={size - size * 0.07} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontSize={size * 0.032} fontFamily="JetBrains Mono,monospace" letterSpacing={size * 0.008}>FOCUS TIMER</text>
+        </>
+      )}
     </svg>
   );
 }
@@ -68,8 +72,8 @@ export default function Badges({ totalMinutes, earnedBadgeIds, newlyUnlocked, cl
   const [selected, setSelected] = useState<BadgeDef | null>(null);
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="grid grid-cols-4 gap-2.5">
+    <div className={cn("space-y-4", className)}>
+      <div className="grid grid-cols-4 gap-3">
         {BADGE_MILESTONES.map((badge) => {
           const earned = earnedBadgeIds.includes(badge.id);
           const isNew  = newlyUnlocked === badge.id;
@@ -80,31 +84,46 @@ export default function Badges({ totalMinutes, earnedBadgeIds, newlyUnlocked, cl
               key={badge.id}
               onClick={() => earned && setSelected(badge)}
               disabled={!earned}
-              className={cn("flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-300", earned && "cursor-pointer", isNew && "animate-badge-unlock")}
+              className={cn(
+                "group relative flex flex-col items-center gap-2 p-3.5 rounded-2xl transition-all duration-500",
+                earned ? "cursor-pointer hover:scale-[1.05] active:scale-[0.98]" : "cursor-default opacity-60",
+                isNew && "animate-badge-unlock"
+              )}
               style={{
-                background: earned ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)",
-                border: `1px solid ${earned ? badge.ring : "rgba(255,255,255,0.08)"}`,
-                boxShadow: earned ? `0 0 14px ${badge.glow}` : "none",
+                background: earned ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${earned ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)"}`,
+                boxShadow: earned ? `0 8px 24px -12px ${badge.glow}` : "none",
               }}
               data-testid={`badge-${badge.id}`}
             >
-              <div className="relative w-10 h-10 flex items-center justify-center">
+              <div className="relative w-11 h-11 flex items-center justify-center">
                 {earned ? (
-                  <div style={{ transform: "scale(0.36)", transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                    <BadgeSvg badge={badge} size={112} />
+                  <div style={{ transform: "scale(0.39)", transformOrigin: "center center", position: "absolute" }}>
+                    <BadgeSvg badge={badge} size={112} showText={false} />
                   </div>
                 ) : (
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <Lock className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.3)" }} />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 group-hover:bg-white/5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <Lock className="w-4 h-4" style={{ color: "rgba(255,255,255,0.2)" }} />
                   </div>
                 )}
+                {earned && (
+                   <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+                        style={{ boxShadow: `0 0 15px ${badge.glow}`, border: `1px solid ${badge.ring}` }} />
+                )}
               </div>
-              <span className="text-center leading-tight" style={{ fontSize: "8px", letterSpacing: "0.1em", fontFamily: "'Rajdhani',sans-serif", fontWeight: 700, color: earned ? badge.color : "rgba(255,255,255,0.35)" }}>
-                {badge.name}
-              </span>
+              
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-center leading-none" style={{ fontSize: "9px", letterSpacing: "0.12em", fontFamily: "'Rajdhani',sans-serif", fontWeight: 700, color: earned ? badge.color : "rgba(255,255,255,0.3)" }}>
+                  {badge.name}
+                </span>
+                <span className="text-[7px] uppercase tracking-wider opacity-40 font-medium" style={{ fontFamily: "'Space Grotesk',sans-serif", color: earned ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)" }}>
+                  {badge.minutesRequired >= 60 ? `${badge.minutesRequired / 60}H` : `${badge.minutesRequired}M`}
+                </span>
+              </div>
+
               {!earned && (
-                <div className="w-full h-px rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-                  <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: "rgba(255,255,255,0.3)" }} />
+                <div className="absolute bottom-2 left-3 right-3 h-[2px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                  <div className="h-full transition-all duration-1000" style={{ width: `${pct * 100}%`, background: "rgba(255,255,255,0.15)" }} />
                 </div>
               )}
             </button>
@@ -115,27 +134,44 @@ export default function Badges({ totalMinutes, earnedBadgeIds, newlyUnlocked, cl
       {/* Badge detail modal */}
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(14px)" }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)" }}
           onClick={() => setSelected(null)}
         >
           <div
-            className="animate-scale-in flex flex-col items-center gap-6 p-8 rounded-3xl"
-            style={{ background: "rgba(8,8,18,0.97)", border: `1px solid ${selected.glow}`, boxShadow: `0 0 50px ${selected.glow}`, maxWidth: 360, width: "100%" }}
+            className="animate-in zoom-in-95 duration-300 flex flex-col items-center gap-8 p-10 rounded-[2.5rem]"
+            style={{ 
+              background: "rgba(8,8,18,0.98)", 
+              border: `1px solid rgba(255,255,255,0.12)`, 
+              boxShadow: `0 32px 80px -20px rgba(0,0,0,0.8), 0 0 40px ${selected.glow}`,
+              maxWidth: 400, 
+              width: "100%" 
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="animate-float"><BadgeSvg badge={selected} size={240} /></div>
-            <div className="text-center space-y-1.5">
-              <div className="text-lg tracking-[0.22em] font-semibold" style={{ color: selected.color, fontFamily: "'Rajdhani',sans-serif" }}>{selected.name}</div>
-              <div className="text-sm" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.6)" }}>{selected.subtitle}</div>
+            <div className="animate-float"><BadgeSvg badge={selected} size={280} /></div>
+            
+            <div className="text-center space-y-2">
+              <div className="text-2xl tracking-[0.3em] font-bold" style={{ color: selected.color, fontFamily: "'Rajdhani',sans-serif" }}>{selected.name}</div>
+              <div className="text-base font-light" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.5)", letterSpacing: "0.02em" }}>{selected.subtitle}</div>
             </div>
+
+            <div className="w-full h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)" }} />
+
             <button
               onClick={() => downloadBadgePng(selected)}
-              data-testid={`button-download-badge-${selected.id}`}
-              className="flex items-center gap-2.5 px-7 py-3 rounded-full transition-all duration-200 active:scale-95"
-              style={{ background: "rgba(255,255,255,0.1)", border: `1px solid ${selected.ring}`, color: selected.color, fontSize: "13px", letterSpacing: "0.15em", fontFamily: "'Rajdhani',sans-serif", fontWeight: 700 }}
+              className="group flex items-center gap-3 px-10 py-4 rounded-2xl transition-all duration-300 hover:brightness-125 active:scale-95"
+              style={{ 
+                background: "rgba(255,255,255,0.05)", 
+                border: `1px solid ${selected.ring}`, 
+                color: selected.color, 
+                fontSize: "14px", 
+                letterSpacing: "0.18em", 
+                fontFamily: "'Rajdhani',sans-serif", 
+                fontWeight: 700 
+              }}
             >
-              <Download className="w-4 h-4" /> DOWNLOAD BADGE
+              <Download className="w-5 h-5 transition-transform group-hover:-translate-y-1" /> DOWNLOAD ASSET
             </button>
           </div>
         </div>
@@ -143,3 +179,4 @@ export default function Badges({ totalMinutes, earnedBadgeIds, newlyUnlocked, cl
     </div>
   );
 }
+

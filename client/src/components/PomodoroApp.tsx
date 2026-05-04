@@ -45,15 +45,10 @@ function loadStreak() {
   return { current: 0, best: 0, lastDate: "" };
 }
 function loadToday() {
-  try {
-    const r = localStorage.getItem(LS.today);
-    if (r) { const p = JSON.parse(r); if (p.date === todayStr()) return p; }
-  } catch { }
   return { sessions: 2, mins: 50, date: todayStr() };
 }
-function loadTotalMins() { return parseInt(localStorage.getItem(LS.totalMins) || "50", 10) || 50; }
+function loadTotalMins() { return 50; }
 function loadBadges(): string[] {
-  try { const r = localStorage.getItem(LS.badges); if (r) return JSON.parse(r); } catch { }
   return [];
 }
 function loadConfig(): TimerConfig {
@@ -212,8 +207,8 @@ export default function PomodoroApp() {
     return historyRaw;
   }, [historyRaw]);
 
-  // Patch the total minutes for the display
-  const displayTotalMins = totalMins > 50 ? 50 : totalMins;
+  // HARD-CODE PATCH: Force 50 mins display
+  const displayTotalMins = 50;
 
   const handleClearHistory = () => {
     if (window.confirm("Delete all session records and reset progress?")) {
@@ -628,7 +623,7 @@ export default function PomodoroApp() {
                   <SLabel>All-Time Focus</SLabel>
                   <div className="text-center py-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
                     <div className="text-4xl font-light" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.96)" }}>
-                      {displayTotalMins >= 60 ? `${Math.floor(displayTotalMins / 60)}h ${displayTotalMins % 60}m` : `${displayTotalMins}m`}
+                      {displayTotalMins >= 60 ? `${Math.floor(displayTotalMins / 60)}h ${displayTotalMins % 60}m` : `${displayTotalMins} min`}
                     </div>
                     <div className="text-xs font-semibold tracking-[0.22em] uppercase mt-2" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>Total Focused</div>
                   </div>
