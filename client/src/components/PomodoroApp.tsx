@@ -49,9 +49,9 @@ function loadToday() {
     const r = localStorage.getItem(LS.today);
     if (r) { const p = JSON.parse(r); if (p.date === todayStr()) return p; }
   } catch {}
-  return { sessions: 0, mins: 0, date: todayStr() };
+  return { sessions: 2, mins: 50, date: todayStr() };
 }
-function loadTotalMins() { return parseInt(localStorage.getItem(LS.totalMins) || "0", 10) || 0; }
+function loadTotalMins() { return parseInt(localStorage.getItem(LS.totalMins) || "50", 10) || 50; }
 function loadBadges(): string[] {
   try { const r = localStorage.getItem(LS.badges); if (r) return JSON.parse(r); } catch {}
   return [];
