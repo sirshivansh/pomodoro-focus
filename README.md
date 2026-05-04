@@ -9,6 +9,16 @@
 
 ---
 
+## 🛡️ The "Reliability Guard" Update (v1.3.0)
+
+Stability is our priority. This update targets the most complex part of any Pomodoro app: the transition.
+
+- 🔒 **Session Transition Guard**: Implemented a robust 1-second logic lock to prevent recursive session recordings and infinite sound loops.
+- ⚛️ **Atomic State Management**: Decoupled completion logic from the primary timer ticks, ensuring mode transitions (Focus ↔ Break) are atomic and race-condition free.
+- 🧼 **Logic Refactoring**: Cleaned up the high-precision Quartz engine to handle browser backgrounding and tab switching even more gracefully.
+
+---
+
 ## 🚀 The "Quartz" Update (v1.2.0)
 
 We've evolved. PomoFocusTrack is no longer just a browser tab—it's a productivity ecosystem.

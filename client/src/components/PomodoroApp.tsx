@@ -214,6 +214,7 @@ export default function PomodoroApp() {
   const expectedEndTimeRef = useRef<number | null>(null);
   const sessionStartRef = useRef<string>("");
   const autoStartRef = useRef(config.autoStart);
+  const transitioningRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   const timerDataRef = useRef(timerData);
@@ -268,6 +269,9 @@ export default function PomodoroApp() {
   }, [totalMins]);
 
   const skipToNext = useCallback((current: TimerData, cfg: TimerConfig, completed: boolean) => {
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+    
     const isWork = current.currentSession === "work";
     const nextSessions = (isWork && completed) ? current.sessionsCompleted + 1 : current.sessionsCompleted;
     let nextSession: SessionType, nextDuration: number;
@@ -373,6 +377,9 @@ export default function PomodoroApp() {
     }
 
     setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
+    
+    // Clear guard after state update has likely processed
+    setTimeout(() => { transitioningRef.current = false; }, 1000);
   }, [createSession, toast]);
 
   useEffect(() => {
@@ -384,18 +391,18 @@ export default function PomodoroApp() {
         expectedEndTimeRef.current = Date.now() + (timerData.timeRemaining * 1000);
       }
 
-      intervalRef.current = setInterval(() => {
+      const timerId = setInterval(() => {
         const now = Date.now();
         const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current! - now) / 1000));
         
+        if (remaining <= 0) {
+          clearInterval(timerId);
+          expectedEndTimeRef.current = null;
+          skipToNext(timerDataRef.current, config, true);
+          return;
+        }
+
         setTimerData(prev => {
-          if (remaining <= 0) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            expectedEndTimeRef.current = null;
-            skipToNext(prev, config, true);
-            return prev;
-          }
-          
           // Only update if the second has actually changed to prevent jitter
           if (remaining !== prev.timeRemaining) {
             return { ...prev, timeRemaining: remaining };
@@ -403,16 +410,13 @@ export default function PomodoroApp() {
           return prev;
         });
       }, 100); // 10Hz check for high precision
+      intervalRef.current = timerId;
+      return () => clearInterval(timerId);
     } else {
       // Clear tracking refs when not running
       expectedEndTimeRef.current = null;
       if (timerData.state === "idle") sessionStartRef.current = "";
-      if (intervalRef.current) { 
-        clearInterval(intervalRef.current); 
-        intervalRef.current = null; 
-      }
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [timerData.state, timerData.currentSession, config, skipToNext]);
 
   useEffect(() => {

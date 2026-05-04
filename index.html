@@ -470,7 +470,7 @@
                     <span
                         class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium tracking-wide text-white/40"
                         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
-                        v1.2.0
+                        v1.3.0
                     </span>
                 </div>
 
@@ -1499,23 +1499,45 @@
                     </div>
 
 
-                    <!-- v1.2.0 -->
+                    <!-- v1.3.0 -->
                     <div class="relative pl-10 mb-10">
                         <div class="timeline-line"></div>
                         <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
                             style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                            <span class="text-[10px] font-bold text-white">1.3</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.3.0 — The Reliability Guard</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Infinite session loops and duplicate history records at mode transitions.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Engineered a robust transition guard lock and decoupled completion logic from the primary state updaters, ensuring atomic transitions between Focus and Break modes.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Fixed: Recursive session recording loop</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: 1s Transition Guard Lock</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Improved: Atomic state management</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- v1.2.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#d97706); opacity: 0.7;">
                             <span class="text-[10px] font-bold text-white">1.2</span>
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-sm font-semibold text-white/70">v1.2.0</span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
+                                <span class="text-sm font-semibold text-white/50">v1.2.0 — The Quartz Engine</span>
                             </div>
-                            <p class="text-xs text-white/30 mb-3">High-Precision Quartz Timer Update</p>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Timer drift and delayed ticks in background/inactive browser tabs.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Migrated to a system-clock absolute timing engine (`Date.now()`) and implemented BroadcastChannel for zero-latency multi-window synchronization.</p>
                             <div class="flex flex-wrap gap-1.5">
-                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added: Quartz Timer Engine (Date.now sync)</span>
-                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Fixed: Timer drift in background tabs</span>
-                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Improved: Keyboard 'Skip' handler reliability</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/5 text-emerald-400/50 border border-emerald-500/5">Added: Quartz Timer Engine</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/5 text-emerald-400/50 border border-emerald-500/5">Added: Mini-Timer Window</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/5 text-emerald-400/50 border border-emerald-500/5">Added: Real-time window sync</span>
                             </div>
                         </div>
                     </div>
@@ -1574,7 +1596,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-white/25">
-                        Documentation v1.2.0 · Built with precision.
+                        Documentation v1.3.0 · Built with precision.
                     </p>
                 </div>
             </footer>
