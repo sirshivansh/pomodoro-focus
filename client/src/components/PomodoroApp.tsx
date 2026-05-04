@@ -278,22 +278,35 @@ export default function PomodoroApp() {
 
       if (completed) {
         const durationMins = Math.floor(cfg.workDuration / 60);
+        const startTimeStr = new Date(Date.now() - cfg.workDuration * 1000).toISOString();
+        
+        console.log(`[Sync] Attempting to save focus session: ${durationMins}m, started at ${startTimeStr}`);
+        
         const record = {
           type: "work" as const,
           duration: cfg.workDuration,
           completed: true,
-          startTime: new Date(Date.now() - cfg.workDuration * 1000),
+          startTime: startTimeStr,
         };
+
         createSession.mutate(record as any, {
           onError: (err) => {
-            console.error("Failed to save work session:", err);
-            toast({ title: "Sync failed", description: "Could not save focus session to cloud.", variant: "destructive" });
+            console.error("[Sync] Failed to save work session:", err);
+            toast({ 
+              title: "Cloud Sync Failed", 
+              description: "Your session was saved locally but couldn't be synced to the cloud. Please check your connection.", 
+              variant: "destructive" 
+            });
           },
-          onSuccess: () => {
-            console.log("Work session saved successfully");
-            toast({ title: "Session Synced", description: "Your focus session has been saved to the cloud." });
+          onSuccess: (data) => {
+            console.log("[Sync] Work session saved successfully:", data);
+            toast({ 
+              title: "Session Synced ✨", 
+              description: `Successfully saved your ${durationMins}m focus session.`,
+            });
           }
         });
+        
         setCompletedCount(c => c + 1);
 
         setTodayData(prev => {
@@ -324,18 +337,19 @@ export default function PomodoroApp() {
       nextSession = "work"; 
       nextDuration = cfg.workDuration;
       if (completed) {
+        const startTimeStr = new Date(Date.now() - current.totalTime * 1000).toISOString();
         const record = {
           type: current.currentSession,
           duration: current.totalTime,
           completed: true,
-          startTime: new Date(Date.now() - current.totalTime * 1000),
+          startTime: startTimeStr,
         };
         createSession.mutate(record as any, {
           onError: (err) => {
-            console.error("Failed to save break session:", err);
+            console.error("[Sync] Failed to save break session:", err);
           },
-          onSuccess: () => {
-            console.log("Break session saved successfully");
+          onSuccess: (data) => {
+            console.log("[Sync] Break session saved successfully:", data);
           }
         });
 

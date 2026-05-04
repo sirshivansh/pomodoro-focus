@@ -18,13 +18,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions", requireAuth, async (req, res) => {
     const user = req.user as User;
     const sessions = await storage.getSessionsForUser(user.id);
+    console.log(`[API] Fetched ${sessions.length} sessions for user ${user.id}`);
     res.json(sessions);
   });
 
   app.post("/api/sessions", requireAuth, async (req, res) => {
     const user = req.user as User;
-    const session = await storage.createSession(user.id, req.body);
-    res.status(201).json(session);
+    console.log(`[API] Creating session for user ${user.id}:`, req.body);
+    try {
+      const session = await storage.createSession(user.id, req.body);
+      console.log(`[API] Successfully created session ${session.id}`);
+      res.status(201).json(session);
+    } catch (err) {
+      console.error(`[API] Failed to create session:`, err);
+      res.status(500).json({ error: "Failed to create session" });
+    }
   });
 
   // --- Settings ---
