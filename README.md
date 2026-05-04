@@ -9,10 +9,11 @@
 
 ---
 
-## 🚀 The "Real App" Update (v1.1.0)
+## 🚀 The "Quartz" Update (v1.2.0)
 
 We've evolved. PomoFocusTrack is no longer just a browser tab—it's a productivity ecosystem.
 
+- ⚡ **High-Precision Quartz Engine**: Drift-free timer synced to the absolute system clock (`Date.now()`).
 - 🪟 **Mini-Window Mode**: Pop out a compact, content-only timer that stays on top of your workflow.
 - 📡 **Real-Time Cross-Window Sync**: Actions in the mini-timer reflect in the main app instantly via the BroadcastChannel API.
 - 🎙️ **Premium Audio & Voice**: Synthetic startup chimes and AI-powered voice announcements keep you informed without looking at the screen.

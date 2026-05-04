@@ -470,7 +470,7 @@
                     <span
                         class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium tracking-wide text-white/40"
                         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
-                        v1.1.1
+                        v1.2.0
                     </span>
                 </div>
 
@@ -621,8 +621,8 @@
                                     class="text-red-400"></iconify-icon>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-white mb-1.5">Precision Timer Engine</h3>
-                                <p class="text-sm text-white/45 leading-relaxed">Upgraded countdown engine that reaches absolute zero (00:00) with millisecond precision before transitioning, ensuring every second of your focus is accounted for.</p>
+                                <h3 class="font-semibold text-white mb-1.5">High-Precision Quartz Engine</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Upgraded countdown engine using the system clock (Date.now()) for absolute timing. Replaces traditional intervals to eliminate drift, ensuring your focus time is accurate to the millisecond.</p>
                             </div>
                         </div>
                     </div>
@@ -1498,6 +1498,28 @@
                         </div>
                     </div>
 
+
+                    <!-- v1.2.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                            <span class="text-[10px] font-bold text-white">1.2</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.2.0</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
+                            </div>
+                            <p class="text-xs text-white/30 mb-3">High-Precision Quartz Timer Update</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added: Quartz Timer Engine (Date.now sync)</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Fixed: Timer drift in background tabs</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Improved: Keyboard 'Skip' handler reliability</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- v1.0.0 -->
                     <div class="relative pl-10">
                         <div class="timeline-line"></div>
@@ -1552,7 +1574,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-white/25">
-                        Documentation v1.1.1 · Built with precision.
+                        Documentation v1.2.0 · Built with precision.
                     </p>
                 </div>
             </footer>

@@ -211,6 +211,7 @@ export default function PomodoroApp() {
   const [sessionCompleted, setSessionCompleted] = useState<{ type: SessionType, next: SessionType } | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const expectedEndTimeRef = useRef<number | null>(null);
   const sessionStartRef = useRef<string>("");
   const autoStartRef = useRef(config.autoStart);
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -377,22 +378,42 @@ export default function PomodoroApp() {
   useEffect(() => {
     if (timerData.state === "running") {
       if (!sessionStartRef.current) sessionStartRef.current = nowTime();
+      
+      // Calculate the absolute end time if it's not already set
+      if (expectedEndTimeRef.current === null) {
+        expectedEndTimeRef.current = Date.now() + (timerData.timeRemaining * 1000);
+      }
+
       intervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current! - now) / 1000));
+        
         setTimerData(prev => {
-          if (prev.timeRemaining <= 0) {
-            clearInterval(intervalRef.current!);
+          if (remaining <= 0) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            expectedEndTimeRef.current = null;
             skipToNext(prev, config, true);
             return prev;
           }
-          return { ...prev, timeRemaining: prev.timeRemaining - 1 };
+          
+          // Only update if the second has actually changed to prevent jitter
+          if (remaining !== prev.timeRemaining) {
+            return { ...prev, timeRemaining: remaining };
+          }
+          return prev;
         });
-      }, 1000);
+      }, 100); // 10Hz check for high precision
     } else {
+      // Clear tracking refs when not running
+      expectedEndTimeRef.current = null;
       if (timerData.state === "idle") sessionStartRef.current = "";
-      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      if (intervalRef.current) { 
+        clearInterval(intervalRef.current); 
+        intervalRef.current = null; 
+      }
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [timerData.state, config, skipToNext]);
+  }, [timerData.state, timerData.currentSession, config, skipToNext]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -404,7 +425,7 @@ export default function PomodoroApp() {
       } else if (e.key === "r" || e.key === "R") {
         setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
       } else if (e.key === "n" || e.key === "N") {
-        setTimerData(p => { skipToNext(p, config, false); return p; });
+        skipToNext(timerDataRef.current, config, false);
       }
     };
     window.addEventListener("keydown", handler);
