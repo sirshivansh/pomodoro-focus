@@ -23,6 +23,7 @@ export interface IStorage {
   getPomodoroSession(id: string): Promise<PomodoroSession | undefined>;
   getSessionsForUser(userId: string): Promise<PomodoroSession[]>;
   createSession(userId: string, session: InsertPomodoroSession): Promise<PomodoroSession>;
+  clearSessions(userId: string): Promise<void>;
 
   getSettings(userId: string): Promise<PomodoroSettings | undefined>;
   createSettings(userId: string, settings: InsertPomodoroSettings): Promise<PomodoroSettings>;
@@ -71,6 +72,10 @@ export class DatabaseStorage implements IStorage {
 
     const [session] = await db.insert(pomodoroSessions).values(sessionToInsert).returning();
     return session;
+  }
+
+  async clearSessions(userId: string) {
+    await db.delete(pomodoroSessions).where(eq(pomodoroSessions.userId, userId));
   }
 
   async getSettings(userId: string) {

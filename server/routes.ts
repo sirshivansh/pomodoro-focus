@@ -34,6 +34,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create session" });
     }
   });
+  
+  app.delete("/api/sessions", requireAuth, async (req, res) => {
+    const user = req.user as User;
+    console.log(`[API] Clearing sessions for user ${user.id}`);
+    try {
+      await storage.clearSessions(user.id);
+      res.sendStatus(204);
+    } catch (err) {
+      console.error(`[API] Failed to clear sessions:`, err);
+      res.status(500).json({ error: "Failed to clear sessions" });
+    }
+  });
 
   // --- Settings ---
   app.get("/api/settings", requireAuth, async (req, res) => {

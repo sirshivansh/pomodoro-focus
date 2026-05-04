@@ -31,5 +31,18 @@ export function useSessions() {
     },
   });
 
-  return { sessions, isLoading, createSession };
+  const clearSessions = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/sessions", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to clear sessions");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+    },
+  });
+  
+  return { sessions, isLoading, createSession, clearSessions };
 }
