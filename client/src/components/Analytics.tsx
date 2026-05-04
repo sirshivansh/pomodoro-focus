@@ -35,15 +35,19 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   }
 
   const workSessions = filtered.filter(r => r.type === "work");
-  const total = workSessions.length;
-  // duration in DB is seconds, so divide by 60
-  const time = workSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
+  const shortBreakSessions = filtered.filter(r => r.type === "short-break");
+  const longBreakSessions = filtered.filter(r => r.type === "long-break");
 
-  const totalAllTime = filtered.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0) || 1;
-  const workPct = Math.round((time / totalAllTime) * 100);
-  const shortBreakTime = filtered.filter(r => r.type === "short-break").reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
-  const shortPct = Math.round((shortBreakTime / totalAllTime) * 100);
-  const longPct = Math.max(0, 100 - workPct - shortPct);
+  const total = workSessions.length;
+  const focusTime = workSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
+  const shortBreakTime = shortBreakSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
+  const longBreakTime = longBreakSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
+
+  const totalTime = focusTime + shortBreakTime + longBreakTime;
+  
+  const workPct = totalTime > 0 ? Math.round((focusTime / totalTime) * 100) : 0;
+  const shortPct = totalTime > 0 ? Math.round((shortBreakTime / totalTime) * 100) : 0;
+  const longPct = totalTime > 0 ? Math.max(0, 100 - workPct - shortPct) : 0;
 
   let chart: { name: string; sessions: number }[] = [];
   
@@ -65,6 +69,7 @@ function processAnalytics(records: SessionRecord[], period: Period) {
       const d = new Date(r.startTime).getDay();
       counts[d]++;
     });
+    // Reorder days to start from today back to 7 days ago if we wanted, but standard week is fine
     chart = days.map((name, i) => ({ name, sessions: counts[i] }));
   } else if (period === "monthly") {
     const counts = [0, 0, 0, 0];
@@ -94,7 +99,7 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   return {
     chart,
     total,
-    time,
+    time: focusTime,
     breakdown: [
       { label: "Focus", pct: workPct, color: "rgba(255,255,255,0.8)" },
       { label: "Short Break", pct: shortPct, color: "rgba(100,210,170,0.8)" },

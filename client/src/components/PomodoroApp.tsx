@@ -208,6 +208,8 @@ export default function PomodoroApp() {
     return { timeRemaining: cfg.workDuration, totalTime: cfg.workDuration, currentSession: "work", sessionsCompleted: 0, state: "idle" };
   });
 
+  const [sessionCompleted, setSessionCompleted] = useState<{ type: SessionType, next: SessionType } | null>(null);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<string>("");
   const autoStartRef = useRef(config.autoStart);
@@ -306,14 +308,25 @@ export default function PomodoroApp() {
 
         if (cfg.soundEnabled) playBeep("work");
         if (cfg.notificationsEnabled) sendNotification("Focus session complete!", isLong ? "Time for a long break." : "Take a short break.");
-        toast({ title: "Session complete", description: isLong ? "Long break time." : "Short break." });
+        toast({ title: "Focus session complete", description: isLong ? "Next: Long break" : "Next: Short break" });
+        setSessionCompleted({ type: "work", next: nextSession });
       }
     } else {
-      nextSession = "work"; nextDuration = cfg.workDuration;
+      nextSession = "work"; 
+      nextDuration = cfg.workDuration;
       if (completed) {
+        const record = {
+          type: current.currentSession,
+          duration: current.totalTime,
+          completed: true,
+          startTime: new Date(Date.now() - current.totalTime * 1000).toISOString(),
+        };
+        createSession.mutate(record as any);
+
         if (cfg.soundEnabled) playBeep("break");
         if (cfg.notificationsEnabled) sendNotification("Break over!", "Ready to focus again?");
-        toast({ title: "Break over", description: "Back to focus." });
+        toast({ title: "Break complete", description: "Next: Focus session" });
+        setSessionCompleted({ type: current.currentSession, next: "work" });
       }
     }
 
@@ -336,7 +349,7 @@ export default function PomodoroApp() {
       if (!sessionStartRef.current) sessionStartRef.current = nowTime();
       intervalRef.current = setInterval(() => {
         setTimerData(prev => {
-          if (prev.timeRemaining <= 1) {
+          if (prev.timeRemaining <= 0) {
             clearInterval(intervalRef.current!);
             skipToNext(prev, config, true);
             return prev;
@@ -397,6 +410,8 @@ export default function PomodoroApp() {
       setTimerData(p => ({ ...p, timeRemaining: dur, totalTime: dur }));
     }
   };
+
+  const closeCompletion = () => setSessionCompleted(null);
 
   const handleClearHistory = () => { /* API clear to be added */ };
   const cycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
@@ -584,6 +599,27 @@ export default function PomodoroApp() {
       {showProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowProfile(false); }}>
           <div className="animate-scale-in w-full max-w-sm flex items-center justify-center"><ProfilePanel onClose={() => setShowProfile(false)} /></div>
+        </div>
+      )}
+
+      {sessionCompleted && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}>
+          <div className="animate-scale-in w-full max-w-sm p-8 rounded-3xl text-center space-y-6" style={{ background: "rgba(12,12,24,0.95)", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+            <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: sessionCompleted.type === "work" ? "rgba(255,255,255,0.8)" : "rgba(100,210,170,0.8)" }} />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.95)" }}>
+                {sessionCompleted.type === "work" ? "Focus Session Complete" : "Break Session Complete"}
+              </h3>
+              <p className="text-sm mt-2 font-medium" style={{ fontFamily: "'Rajdhani',sans-serif", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)" }}>
+                NEXT: {sessionCompleted.next === "work" ? "FOCUS SESSION" : sessionCompleted.next === "short-break" ? "SHORT BREAK" : "LONG BREAK"}
+              </p>
+            </div>
+            <button onClick={closeCompletion} className="w-full py-4 rounded-2xl font-semibold transition-all active:scale-95 hover:brightness-110" style={{ background: "rgba(255,255,255,0.95)", color: "#050508", fontFamily: "'Space Grotesk',sans-serif" }}>
+              Got it
+            </button>
+          </div>
         </div>
       )}
     </div>
