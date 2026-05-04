@@ -100,6 +100,45 @@ async function requestNotificationPermission() {
   } catch (_) {}
 }
 
+function announce(text: string) {
+  try {
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = 0.9;
+    msg.pitch = 1.1;
+    msg.volume = 0.8;
+    window.speechSynthesis.speak(msg);
+  } catch (_) {}
+}
+
+function playClockSound(type: "start" | "tick") {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === "start") {
+      // Modern startup chime
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    } else {
+      // Subtle tick
+      osc.type = "square";
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    }
+  } catch (_) {}
+}
+
 const SESSION_TABS: { key: SessionType; label: string }[] = [
   { key: "work", label: "Focus" },
   { key: "short-break", label: "Short Break" },
@@ -172,6 +211,39 @@ export default function PomodoroApp() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<string>("");
   const autoStartRef = useRef(config.autoStart);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  const timerDataRef = useRef(timerData);
+  useEffect(() => { timerDataRef.current = timerData; }, [timerData]);
+
+  useEffect(() => {
+    channelRef.current = new BroadcastChannel("pomodoro_sync");
+    channelRef.current.onmessage = (event) => {
+      if (event.data.type === "REQUEST_STATE") {
+        channelRef.current?.postMessage({ type: "STATE_UPDATE", payload: timerDataRef.current });
+      } else if (event.data.type === "COMMAND") {
+        const { action } = event.data;
+        // Using window functions directly to avoid dependency on state/props
+        if (action === "START") {
+          const btn = document.querySelector('[data-testid="button-start"]') as HTMLButtonElement;
+          btn?.click();
+        } else if (action === "PAUSE") {
+          const btn = document.querySelector('[data-testid="button-pause"]') as HTMLButtonElement;
+          btn?.click();
+        } else if (action === "RESET") {
+          const btn = document.querySelector('[data-testid="button-reset"]') as HTMLButtonElement;
+          btn?.click();
+        }
+      }
+    };
+    return () => channelRef.current?.close();
+  }, []); // Only run once
+
+  useEffect(() => {
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: "TICK", payload: timerData });
+    }
+  }, [timerData]);
 
   useEffect(() => { autoStartRef.current = config.autoStart; }, [config.autoStart]);
   useEffect(() => { document.documentElement.classList.add("dark"); }, []);
@@ -246,8 +318,15 @@ export default function PomodoroApp() {
     }
 
     const nextState = autoStartRef.current && completed ? "running" : "idle";
-    if (nextState === "running") sessionStartRef.current = nowTime();
-    else sessionStartRef.current = "";
+    if (nextState === "running") {
+      sessionStartRef.current = nowTime();
+      if (cfg.soundEnabled) {
+        playClockSound("start");
+        announce(nextSession === "work" ? "Focus session started" : "Break time started");
+      }
+    } else {
+      sessionStartRef.current = "";
+    }
 
     setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
   }, [toast]);
@@ -301,7 +380,13 @@ export default function PomodoroApp() {
     setTimerData(prev => ({ ...prev, currentSession: session, timeRemaining: dur, totalTime: dur, state: "idle" }));
   };
 
-  const handleStart = () => setTimerData(p => ({ ...p, state: "running" }));
+  const handleStart = () => {
+    setTimerData(p => ({ ...p, state: "running" }));
+    if (config.soundEnabled) {
+      playClockSound("start");
+      announce(timerData.currentSession === "work" ? "Focus session started" : "Break time started");
+    }
+  };
   const handlePause = () => setTimerData(p => ({ ...p, state: "paused" }));
   const handleStop = () => setTimerData(p => ({ ...p, state: "idle", timeRemaining: p.totalTime }));
   const handleReset = () => setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
@@ -339,6 +424,22 @@ export default function PomodoroApp() {
           <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSettings(true)} testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSidebar(true)} testId="button-sidebar" highlighted><Flame className="w-4 h-4" /></HBtn>
+          <button 
+            onClick={() => {
+              const w = 320;
+              const h = 380;
+              const left = (window.screen.width / 2) - (w / 2);
+              const top = (window.screen.height / 2) - (h / 2);
+              window.open("/mini", "PomoTimer", `width=${w},height=${h},left=${left},top=${top},resizable=no,scrollbars=no,status=no,location=no,toolbar=no,menubar=no`);
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-white/10"
+            style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
+            title="Open Mini Window"
+          >
+            <div className="w-4 h-4 border-2 border-current rounded-sm flex items-center justify-center">
+              <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse" />
+            </div>
+          </button>
           <button onClick={() => setShowProfile(true)} className="w-9 h-9 ml-2 rounded-full flex items-center justify-center transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
             <UserIcon className="w-4 h-4" />
           </button>

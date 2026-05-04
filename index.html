@@ -4,7 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PomoFocusTrack — Documentation</title>
+    <title>Focus Timer — Premium Pomodoro</title>
+    <style>
+      body { background-color: #07070f; margin: 0; padding: 0; }
+      #root { min-height: 100vh; }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
@@ -577,6 +581,36 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Feature 5: NEW -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(245,158,11,0.1);">
+                                <iconify-icon icon="solar:window-frame-bold-duotone" width="20"
+                                    class="text-accent-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Premium Mini-Timer Window</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Pop out a compact, content-only timer window that stays on top. Perfect for monitoring your focus while working in other apps. Features its own "Click to Enable" audio activation and hover-based quick controls.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 6: NEW -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(140,175,255,0.1);">
+                                <iconify-icon icon="solar:transmission-bold-duotone" width="20"
+                                    class="text-blue-300"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Real-Time Cross-Window Sync</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Using the BroadcastChannel API, the main app and mini-timer stay perfectly in sync without backend latency. Pause, start, or reset in one window, and the other reflects it instantly.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Additional Features Grid -->
@@ -602,9 +636,8 @@
                         <iconify-icon icon="solar:volume-loud-bold-duotone" width="18"
                             class="text-white/30 mt-0.5 flex-shrink-0"></iconify-icon>
                         <div>
-                            <p class="text-sm font-medium text-white/80">Hardware Audio</p>
-                            <p class="text-xs text-white/35 mt-0.5">Web Audio API sine-wave chimes + Push Notifications.
-                            </p>
+                            <p class="text-sm font-medium text-white/80">Premium Hardware Audio</p>
+                            <p class="text-xs text-white/35 mt-0.5">High-fidelity startup chimes and AI voice announcements for focus transitions.</p>
                         </div>
                     </div>
                     <div class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors">
@@ -623,6 +656,16 @@
                             <p class="text-sm font-medium text-white/80">Motivational Quote Engine</p>
                             <p class="text-xs text-white/35 mt-0.5">Rotating, context-aware productivity quotes during
                                 active focus sessions.</p>
+                        </div>
+                    </div>
+                    <div
+                        class="glass rounded-lg p-4 flex items-start gap-3 glass-hover transition-colors sm:col-span-2"
+                        style="border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05);">
+                        <iconify-icon icon="solar:stars-bold-duotone" width="18"
+                            class="text-accent-400 mt-0.5 flex-shrink-0"></iconify-icon>
+                        <div>
+                            <p class="text-sm font-medium text-accent-400">Premium Loading Experience</p>
+                            <p class="text-xs text-white/40 mt-0.5">High-fidelity dark-mode skeletons and glowing animated loaders for a zero-latency feel.</p>
                         </div>
                     </div>
                 </div>
