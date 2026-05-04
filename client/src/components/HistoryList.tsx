@@ -81,7 +81,7 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
             {formatDate(date)}
           </div>
 
-          {items.filter(r => r.type === "work").map((record) => (
+          {items.map((record) => (
             <div
               key={record.id}
               className="flex items-start gap-3 px-4 py-3 rounded-xl"
@@ -93,7 +93,7 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
               <div className="flex-1 min-w-0">
                 {/* Goal */}
                 <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
-                  Focus Session
+                  {record.type === "work" ? "Focus Session" : record.type === "short-break" ? "Short Break" : "Long Break"}
                 </p>
                 {/* Meta */}
                 <div className="flex items-center gap-3 mt-1.5">

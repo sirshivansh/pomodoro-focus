@@ -284,7 +284,15 @@ export default function PomodoroApp() {
           completed: true,
           startTime: new Date(Date.now() - cfg.workDuration * 1000).toISOString(),
         };
-        createSession.mutate(record as any);
+        createSession.mutate(record as any, {
+          onError: (err) => {
+            console.error("Failed to save work session:", err);
+            toast({ title: "Sync failed", description: "Could not save focus session to cloud.", variant: "destructive" });
+          },
+          onSuccess: () => {
+            console.log("Work session saved successfully");
+          }
+        });
         setCompletedCount(c => c + 1);
 
         setTodayData(prev => {
@@ -321,7 +329,14 @@ export default function PomodoroApp() {
           completed: true,
           startTime: new Date(Date.now() - current.totalTime * 1000).toISOString(),
         };
-        createSession.mutate(record as any);
+        createSession.mutate(record as any, {
+          onError: (err) => {
+            console.error("Failed to save break session:", err);
+          },
+          onSuccess: () => {
+            console.log("Break session saved successfully");
+          }
+        });
 
         if (cfg.soundEnabled) playBeep("break");
         if (cfg.notificationsEnabled) sendNotification("Break over!", "Ready to focus again?");

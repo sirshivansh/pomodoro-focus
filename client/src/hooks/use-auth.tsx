@@ -16,7 +16,9 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function fetchUser() {
-  const res = await fetch("/api/user");
+  const res = await fetch("/api/user", {
+    credentials: "include"
+  });
   if (!res.ok) {
     if (res.status === 401) return null;
     throw new Error("Failed to fetch user");
@@ -32,6 +34,7 @@ function useLoginMutation() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -57,6 +60,7 @@ function useRegisterMutation() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -78,7 +82,10 @@ function useLogoutMutation() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/logout", { method: "POST" });
+      const res = await fetch("/api/logout", { 
+        method: "POST",
+        credentials: "include"
+      });
       if (!res.ok) throw new Error("Logout failed");
     },
     onSuccess: () => {

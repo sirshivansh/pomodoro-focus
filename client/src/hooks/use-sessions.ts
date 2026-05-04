@@ -6,7 +6,9 @@ export function useSessions() {
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["/api/sessions"],
     queryFn: async () => {
-      const res = await fetch("/api/sessions");
+      const res = await fetch("/api/sessions", {
+        credentials: "include"
+      });
       if (!res.ok) throw new Error("Failed to fetch sessions");
       return res.json();
     },
@@ -18,6 +20,7 @@ export function useSessions() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(session),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to save session");
       return res.json();
