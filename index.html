@@ -470,7 +470,7 @@
                     <span
                         class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium tracking-wide text-white/40"
                         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
-                        v1.3.0
+                        v1.4.0
                     </span>
                 </div>
 
@@ -1439,6 +1439,28 @@
 
                 <div class="space-y-6">
 
+                    <!-- v1.4.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.4</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.4.0 — The Stability Shield</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Critical blank screen (white-screen-of-death) on startup and server-side type inconsistencies.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Performed a deep-code audit to restore missing core React imports, enforced strict type safety in session state management, and hardened the Express backend storage layer.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Fixed: Critical Render-Blocking ReferenceError</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Hardened: Server-side Storage Type Safety</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Improved: Dashboard State Hydration</span>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <!-- v1.3.0 -->
                     <div class="relative pl-10 mb-10">
@@ -1449,8 +1471,7 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-sm font-semibold text-white/70">v1.3.0 — The Reliability Guard</span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">LATEST</span>
+                                <span class="text-sm font-semibold text-white/50">v1.3.0 — The Reliability Guard</span>
                             </div>
                             <p class="text-xs text-white/45 mb-2 font-medium">Faced: Infinite session loops and duplicate history records at mode transitions.</p>
                             <p class="text-[11px] text-white/30 mb-3">Overcame: Engineered a robust transition guard lock and decoupled completion logic from the primary state updaters, ensuring atomic transitions between Focus and Break modes.</p>
@@ -1551,7 +1572,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-white/25">
-                        Documentation v1.3.0 · Built with precision.
+                        Documentation v1.4.0 · Built with precision.
                     </p>
                 </div>
             </footer>

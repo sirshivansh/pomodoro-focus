@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { BarChart3, Settings, Flame, LogOut, User as UserIcon, Book } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -344,7 +344,7 @@ export default function PomodoroApp() {
 
         setCompletedCount(c => c + 1);
 
-        setTodayData(prev => {
+        setTodayData((prev: any) => {
           const u = { sessions: prev.sessions + 1, mins: prev.mins + durationMins, date: todayStr() };
           localStorage.setItem(LS.today, JSON.stringify(u)); return u;
         });
@@ -352,7 +352,7 @@ export default function PomodoroApp() {
           const u = prev + durationMins;
           localStorage.setItem(LS.totalMins, String(u)); return u;
         });
-        setStreak(prev => {
+        setStreak((prev: any) => {
           const today = todayStr();
           const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
           let cur = prev.current;
