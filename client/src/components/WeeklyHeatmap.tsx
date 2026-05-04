@@ -7,7 +7,7 @@ function getLastNDays(n: number): string[] {
   return Array.from({ length: n }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (n - 1 - i));
-    return d.toISOString().slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 }
 
@@ -27,9 +27,13 @@ export default function WeeklyHeatmap({ history }: WeeklyHeatmapProps) {
 
   const countByDate = useMemo(() => {
     const map: Record<string, number> = {};
+    const toDateStr = (d: any) => {
+      const date = new Date(d);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
     for (const r of history) {
       if (r.type === "work") {
-        const dateStr = new Date(r.startTime).toISOString().slice(0, 10);
+        const dateStr = toDateStr(r.startTime);
         map[dateStr] = (map[dateStr] || 0) + 1;
       }
     }
@@ -63,7 +67,8 @@ export default function WeeklyHeatmap({ history }: WeeklyHeatmapProps) {
     return count > 0 ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)";
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   return (
     <div className="space-y-3">

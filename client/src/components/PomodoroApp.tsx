@@ -282,7 +282,7 @@ export default function PomodoroApp() {
           type: "work" as const,
           duration: cfg.workDuration,
           completed: true,
-          startTime: new Date(Date.now() - cfg.workDuration * 1000).toISOString(),
+          startTime: new Date(Date.now() - cfg.workDuration * 1000),
         };
         createSession.mutate(record as any, {
           onError: (err) => {
@@ -291,6 +291,7 @@ export default function PomodoroApp() {
           },
           onSuccess: () => {
             console.log("Work session saved successfully");
+            toast({ title: "Session Synced", description: "Your focus session has been saved to the cloud." });
           }
         });
         setCompletedCount(c => c + 1);
@@ -327,7 +328,7 @@ export default function PomodoroApp() {
           type: current.currentSession,
           duration: current.totalTime,
           completed: true,
-          startTime: new Date(Date.now() - current.totalTime * 1000).toISOString(),
+          startTime: new Date(Date.now() - current.totalTime * 1000),
         };
         createSession.mutate(record as any, {
           onError: (err) => {
@@ -357,7 +358,7 @@ export default function PomodoroApp() {
     }
 
     setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
-  }, [toast]);
+  }, [createSession, toast]);
 
   useEffect(() => {
     if (timerData.state === "running") {

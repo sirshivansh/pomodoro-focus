@@ -12,6 +12,7 @@ export function useSessions() {
       if (!res.ok) throw new Error("Failed to fetch sessions");
       return res.json();
     },
+    staleTime: 0,
   });
 
   const createSession = useMutation({

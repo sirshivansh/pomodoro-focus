@@ -16,8 +16,13 @@ function formatDate(dateStr: string): string {
 
 function groupByDate(records: PomodoroSession[]): { date: string; items: PomodoroSession[] }[] {
   const map = new Map<string, PomodoroSession[]>();
+  const toDateStr = (d: any) => {
+    const date = new Date(d);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   for (const r of records) {
-    const dStr = new Date(r.startTime).toISOString().slice(0, 10);
+    const dStr = toDateStr(r.startTime);
     if (!map.has(dStr)) map.set(dStr, []);
     map.get(dStr)!.push(r);
   }

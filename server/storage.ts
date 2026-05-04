@@ -59,10 +59,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSession(userId: string, data: InsertPomodoroSession) {
-    const [session] = await db.insert(pomodoroSessions).values({
+    const sessionToInsert = {
       ...data,
       userId,
-    }).returning();
+      startTime: new Date(data.startTime),
+    };
+    
+    if (data.endTime) {
+      sessionToInsert.endTime = new Date(data.endTime);
+    }
+
+    const [session] = await db.insert(pomodoroSessions).values(sessionToInsert).returning();
     return session;
   }
 

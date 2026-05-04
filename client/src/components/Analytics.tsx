@@ -20,18 +20,27 @@ function processAnalytics(records: SessionRecord[], period: Period) {
   const msPerDay = 86400000;
   let filtered: SessionRecord[] = [];
   
+  const toDateStr = (d: any) => {
+    const date = new Date(d);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const todayStr = toDateStr(now);
+
   if (period === "daily") {
-    const today = now.toISOString().slice(0, 10);
-    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) === today);
+    filtered = records.filter(r => toDateStr(r.startTime) === todayStr);
   } else if (period === "weekly") {
-    const weekAgo = new Date(now.getTime() - 7 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= weekAgo);
+    const weekAgo = new Date(now.getTime() - 7 * msPerDay);
+    const weekAgoStr = toDateStr(weekAgo);
+    filtered = records.filter(r => toDateStr(r.startTime) >= weekAgoStr);
   } else if (period === "monthly") {
-    const monthAgo = new Date(now.getTime() - 30 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= monthAgo);
+    const monthAgo = new Date(now.getTime() - 30 * msPerDay);
+    const monthAgoStr = toDateStr(monthAgo);
+    filtered = records.filter(r => toDateStr(r.startTime) >= monthAgoStr);
   } else if (period === "yearly") {
-    const yearAgo = new Date(now.getTime() - 365 * msPerDay).toISOString().slice(0, 10);
-    filtered = records.filter(r => new Date(r.startTime).toISOString().slice(0, 10) >= yearAgo);
+    const yearAgo = new Date(now.getTime() - 365 * msPerDay);
+    const yearAgoStr = toDateStr(yearAgo);
+    filtered = records.filter(r => toDateStr(r.startTime) >= yearAgoStr);
   }
 
   const workSessions = filtered.filter(r => r.type === "work");
