@@ -1,106 +1,106 @@
-<div align="center">
-  <h1>PomoFocusTrack 🍅</h1>
-  <p><strong>A production-grade, cloud-synchronized Pomodoro productivity suite.</strong></p>
-  <p>
-    Stay focused, track your analytics, and sync your workflow seamlessly across all devices.
-  </p>
-</div>
+# PomoFocusTrack 🍅
 
-<br />
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8.svg)](https://tailwindcss.com/)
 
-PomoFocusTrack has evolved from a local-only tool into a **fully authenticated, cloud-backed application**. Built with a sleek, neo-earthen design aesthetic, it features real-time focus tracking and persistent analytics using a robust backend infrastructure.
-
-## ✨ New Features & Upgrades
-
-- ☁️ **Full Cloud Synchronization**: Goodbye `localStorage`! Your pomodoro sessions, streaks, and analytics are now saved directly to the cloud via our REST API.
-- 🔐 **Real User Authentication**: Secure login and registration flows requiring an **Email Address** and password, powered by Passport.js and robust server-side sessions.
-- 👤 **Dynamic Profile Panel**: A newly designed, interactive profile card showing your email, focus statistics, and total time tracked right from the navigation header.
-- 📊 **Centralized Analytics Engine**: Visual heatmaps and history logs are dynamically pulled from the Neon Database, ensuring your productivity data is consistent across every device you log into.
-- ⚡ **Production Ready Backend**: Transitioned to a powerful Neon PostgreSQL Serverless architecture, orchestrated with Drizzle ORM.
+**PomoFocusTrack** is a production-grade, cloud-synchronized Pomodoro productivity suite. Built with an agency-grade design philosophy, it bridges the gap between aesthetic beauty and high-performance functionality.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 The "Real App" Update (v1.1.0)
 
-### Frontend Architecture
-- **Core Framework:** [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/)
-- **State Management & Caching:** [TanStack React Query](https://tanstack.com/query/latest) (handling auth & session caching)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + custom glassmorphic components
-- **Animations:** [Framer Motion](https://www.framer.com/motion/)
-- **Routing:** [Wouter](https://github.com/molefrog/wouter)
+We've evolved. PomoFocusTrack is no longer just a browser tab—it's a productivity ecosystem.
 
-### Backend Architecture
-- **Server Environment:** [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)
-- **Authentication:** [Passport.js](https://www.passportjs.org/) (Local Strategy) + `connect-pg-simple` for session persistence
-- **Database Engine:** [Neon Serverless PostgreSQL](https://neon.tech/)
-- **ORM:** [Drizzle ORM](https://orm.drizzle.team/)
-- **Validation:** [Zod](https://zod.dev/)
+- 🪟 **Mini-Window Mode**: Pop out a compact, content-only timer that stays on top of your workflow.
+- 📡 **Real-Time Cross-Window Sync**: Actions in the mini-timer reflect in the main app instantly via the BroadcastChannel API.
+- 🎙️ **Premium Audio & Voice**: Synthetic startup chimes and AI-powered voice announcements keep you informed without looking at the screen.
+- 💀 **Advanced Skeleton Loaders**: High-fidelity, pulsing dark-mode skeletons eliminate loading "white flashes" for a premium zero-latency feel.
+- 🕹️ **Remote Interactive Controls**: Pause, skip, or reset your focus session from any open window.
+
+---
+
+## ✨ Core Features
+
+- ☁️ **Cloud Synchronization**: Every session, streak, and achievement is saved to a serverless PostgreSQL database (Neon).
+- 🔐 **Secure Authentication**: Robust session-based auth powered by Passport.js and secure cookie management.
+- 📊 **Deep Analytics**: GitHub-style weekly heatmaps, streak tracking, and daily focus distribution charts.
+- 🏆 **Gamified Achievements**: Unlock badges (Novice, Scholar, Deep Work Master) as you hit focus milestones.
+- 🎨 **Agency-Grade UI/UX**: Custom "Neo-Earthen" dark theme with glassmorphism, radial glows, and fluid Framer Motion animations.
+- ⌨️ **Keyboard Mastery**: Power-user hotkeys (`Space`, `N`, `R`) for seamless control.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, TanStack Query, Tailwind CSS, Framer Motion, Wouter, Lucide Icons |
+| **Backend** | Node.js, Express, Passport.js, Zod, express-session |
+| **Database** | Neon PostgreSQL (Serverless), Drizzle ORM |
+| **Real-time** | BroadcastChannel API, Web Audio API, Speech Synthesis API |
 
 ---
 
 ## 💻 Getting Started
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) (v20+ recommended) and `npm` installed.
+- Node.js (v20+)
+- npm / pnpm
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Clone & Enter**:
    ```bash
    git clone https://github.com/sirshivansh/pomodoro-focus.git
    cd PomoFocusTrack
    ```
 
-2. **Install dependencies:**
+2. **Install Dependencies**:
    ```bash
    npm install
    ```
 
-3. **Set up Environment Variables:**
-   Create a `.env` file in the root directory and add your database configuration:
+3. **Configure Environment**:
+   Create a `.env` file in the root:
    ```env
-   DATABASE_URL=postgresql://user:password@hostname/dbname
-   SESSION_SECRET=your_super_secret_session_key
+   DATABASE_URL=postgresql://user:password@hostname/dbname?sslmode=require
+   SESSION_SECRET=your_secure_secret_here
    ```
 
-4. **Initialize the Database:**
-   Push the schema to your PostgreSQL instance:
+4. **Initialize Database**:
    ```bash
    npm run db:push
    ```
 
 ### Running Locally
 
-To start the development server (which concurrently runs both the Vite frontend proxy and Express backend API):
-
 ```bash
+# Start the full stack concurrently
 npm run dev
 ```
-
-Your app will be running at `http://localhost:5000`. 
-**Try creating a new account using an email address to see the cloud-saving in action!**
+The app will launch at `http://localhost:5000`.
 
 ---
 
-## 🚢 Deployment (Render / Railway)
+## 🚢 Deployment
 
-This project is configured for easy zero-config deployment.
+Optimized for **Render**, **Railway**, or **Vercel**.
 
-1. **Build the production bundle:**
-   ```bash
-   npm run build
-   ```
-   *This command creates an optimized production bundle for the frontend in `dist/public` and compiles the backend into `dist/index.js` using esbuild.*
+1. **Build**: `npm run build`
+2. **Start**: `npm run start`
 
-2. **Start the production server:**
-   ```bash
-   npm run start
-   ```
-
-*(Note: Don't forget to set your `DATABASE_URL` and `SESSION_SECRET` in your hosting provider's environment settings!)*
+The build process compiles the frontend into `dist/public` and the backend into `dist/index.js` for a unified production environment.
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License.
+Distributed under the MIT License. See `LICENSE` for more information.
+
+<div align="center">
+  <br/>
+  <p>Built with precision for the modern focus enthusiast.</p>
+  <strong>POMOFOCUS TRACK</strong>
+</div>
