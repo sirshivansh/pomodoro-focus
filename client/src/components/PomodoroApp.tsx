@@ -41,26 +41,26 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function nowTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 
 function loadStreak() {
-  try { const r = localStorage.getItem(LS.streak); if (r) return JSON.parse(r); } catch {}
+  try { const r = localStorage.getItem(LS.streak); if (r) return JSON.parse(r); } catch { }
   return { current: 0, best: 0, lastDate: "" };
 }
 function loadToday() {
   try {
     const r = localStorage.getItem(LS.today);
     if (r) { const p = JSON.parse(r); if (p.date === todayStr()) return p; }
-  } catch {}
+  } catch { }
   return { sessions: 2, mins: 50, date: todayStr() };
 }
 function loadTotalMins() { return parseInt(localStorage.getItem(LS.totalMins) || "50", 10) || 50; }
 function loadBadges(): string[] {
-  try { const r = localStorage.getItem(LS.badges); if (r) return JSON.parse(r); } catch {}
+  try { const r = localStorage.getItem(LS.badges); if (r) return JSON.parse(r); } catch { }
   return [];
 }
 function loadConfig(): TimerConfig {
   try {
     const r = localStorage.getItem(LS.config);
     if (r) return { ...DEFAULT_CONFIG, ...JSON.parse(r) };
-  } catch {}
+  } catch { }
   return DEFAULT_CONFIG;
 }
 
@@ -81,7 +81,7 @@ function playBeep(type: "work" | "break") {
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.4);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function sendNotification(title: string, body: string) {
@@ -89,7 +89,7 @@ function sendNotification(title: string, body: string) {
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification(title, { body, icon: "/favicon.ico" });
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 async function requestNotificationPermission() {
@@ -97,7 +97,7 @@ async function requestNotificationPermission() {
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission();
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function announce(text: string) {
@@ -107,7 +107,7 @@ function announce(text: string) {
     msg.pitch = 1.1;
     msg.volume = 0.8;
     window.speechSynthesis.speak(msg);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function playClockSound(type: "start" | "tick") {
@@ -136,7 +136,7 @@ function playClockSound(type: "start" | "tick") {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.05);
     }
-  } catch (_) {}
+  } catch (_) { }
 }
 
 const SESSION_TABS: { key: SessionType; label: string }[] = [
@@ -200,7 +200,7 @@ export default function PomodoroApp() {
   const [newBadge, setNewBadge] = useState<string | null>(null);
   const [focusGoal, setFocusGoal] = useState(() => localStorage.getItem(LS.focusGoal) || "");
   const { sessions: historyRaw = [], createSession, clearSessions } = useSessions();
-  
+
   // HARD-CODE PATCH: Fix history and totals for the loop-fix request
   const history = useMemo(() => {
     // If we have more than 4 sessions (glitched loop), show only 2 focus and 2 short breaks
@@ -301,7 +301,7 @@ export default function PomodoroApp() {
   const skipToNext = useCallback((current: TimerData, cfg: TimerConfig, completed: boolean) => {
     if (transitioningRef.current) return;
     transitioningRef.current = true;
-    
+
     const isWork = current.currentSession === "work";
     const nextSessions = (isWork && completed) ? current.sessionsCompleted + 1 : current.sessionsCompleted;
     let nextSession: SessionType, nextDuration: number;
@@ -314,9 +314,9 @@ export default function PomodoroApp() {
       if (completed) {
         const durationMins = Math.floor(cfg.workDuration / 60);
         const startTimeStr = new Date(Date.now() - cfg.workDuration * 1000).toISOString();
-        
+
         console.log(`[Sync] Attempting to save focus session: ${durationMins}m, started at ${startTimeStr}`);
-        
+
         const record = {
           type: "work" as const,
           duration: cfg.workDuration,
@@ -327,21 +327,21 @@ export default function PomodoroApp() {
         createSession.mutate(record as any, {
           onError: (err) => {
             console.error("[Sync] Failed to save work session:", err);
-            toast({ 
-              title: "Cloud Sync Failed", 
-              description: "Your session was saved locally but couldn't be synced to the cloud. Please check your connection.", 
-              variant: "destructive" 
+            toast({
+              title: "Cloud Sync Failed",
+              description: "Your session was saved locally but couldn't be synced to the cloud. Please check your connection.",
+              variant: "destructive"
             });
           },
           onSuccess: (data) => {
             console.log("[Sync] Work session saved successfully:", data);
-            toast({ 
-              title: "Session Synced ✨", 
+            toast({
+              title: "Session Synced ✨",
               description: `Successfully saved your ${durationMins}m focus session.`,
             });
           }
         });
-        
+
         setCompletedCount(c => c + 1);
 
         setTodayData(prev => {
@@ -356,7 +356,7 @@ export default function PomodoroApp() {
           const today = todayStr();
           const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
           let cur = prev.current;
-          if (prev.lastDate === today) {}
+          if (prev.lastDate === today) { }
           else if (prev.lastDate === yesterday) cur = prev.current + 1;
           else cur = 1;
           const u = { current: cur, best: Math.max(cur, prev.best), lastDate: today };
@@ -369,7 +369,7 @@ export default function PomodoroApp() {
         setSessionCompleted({ type: "work", next: nextSession });
       }
     } else {
-      nextSession = "work"; 
+      nextSession = "work";
       nextDuration = cfg.workDuration;
       if (completed) {
         const startTimeStr = new Date(Date.now() - current.totalTime * 1000).toISOString();
@@ -407,7 +407,7 @@ export default function PomodoroApp() {
     }
 
     setTimerData({ timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState });
-    
+
     // Clear guard after state update has likely processed
     setTimeout(() => { transitioningRef.current = false; }, 1000);
   }, [createSession, toast]);
@@ -415,7 +415,7 @@ export default function PomodoroApp() {
   useEffect(() => {
     if (timerData.state === "running") {
       if (!sessionStartRef.current) sessionStartRef.current = nowTime();
-      
+
       // Calculate the absolute end time if it's not already set
       if (expectedEndTimeRef.current === null) {
         expectedEndTimeRef.current = Date.now() + (timerData.timeRemaining * 1000);
@@ -424,7 +424,7 @@ export default function PomodoroApp() {
       const timerId = setInterval(() => {
         const now = Date.now();
         const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current! - now) / 1000));
-        
+
         if (remaining <= 0) {
           clearInterval(timerId);
           expectedEndTimeRef.current = null;
@@ -523,7 +523,7 @@ export default function PomodoroApp() {
           <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSettings(true)} testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
           <HBtn onClick={() => setShowSidebar(true)} testId="button-sidebar" highlighted><Flame className="w-4 h-4" /></HBtn>
-          <button 
+          <button
             onClick={() => {
               const w = 320;
               const h = 380;
