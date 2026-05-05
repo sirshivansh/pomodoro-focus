@@ -7,6 +7,8 @@ export default function SettingsPanelExample() {
     longBreakDuration: 900, // 15 minutes
     sessionsUntilLongBreak: 4,
     soundEnabled: true,
+    autoStart: false,
+    notificationsEnabled: false,
   };
 
   return (

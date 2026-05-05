@@ -34,6 +34,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create session" });
     }
   });
+
+  app.patch("/api/sessions/:id", requireAuth, async (req, res) => {
+    const user = req.user as User;
+    const { id } = req.params;
+    console.log(`[API] Updating session ${id} for user ${user.id}:`, req.body);
+    try {
+      // Security check: ensure the session belongs to the user
+      const existing = await storage.getPomodoroSession(id);
+      if (!existing || existing.userId !== user.id) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const updated = await storage.updateSession(id, req.body);
+      res.json(updated);
+    } catch (err) {
+      console.error(`[API] Failed to update session:`, err);
+      res.status(500).json({ error: "Failed to update session" });
+    }
+  });
   
   app.delete("/api/sessions", requireAuth, async (req, res) => {
     const user = req.user as User;

@@ -32,6 +32,7 @@ export interface IStorage {
   getStreakData(userId: string): Promise<StreakData | undefined>;
   createStreakData(userId: string, streak: InsertStreakData): Promise<StreakData>;
   updateStreakData(userId: string, updates: Partial<StreakData>): Promise<StreakData | undefined>;
+  updateSession(id: string, updates: Partial<PomodoroSession>): Promise<PomodoroSession | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,6 +121,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(streakData.userId, userId))
       .returning();
     return streak;
+  }
+
+  async updateSession(id: string, updates: Partial<PomodoroSession>) {
+    const sessionUpdates: any = { ...updates };
+    if (updates.startTime) sessionUpdates.startTime = new Date(updates.startTime);
+    if (updates.endTime) sessionUpdates.endTime = new Date(updates.endTime);
+
+    const [updated] = await db
+      .update(pomodoroSessions)
+      .set(sessionUpdates)
+      .where(eq(pomodoroSessions.id, id))
+      .returning();
+    return updated;
   }
 }
 

@@ -31,6 +31,22 @@ export function useSessions() {
     },
   });
 
+  const updateSession = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const res = await fetch(`/api/sessions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update session");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+    },
+  });
+
   const clearSessions = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/sessions", {
@@ -44,5 +60,5 @@ export function useSessions() {
     },
   });
   
-  return { sessions, isLoading, createSession, clearSessions };
+  return { sessions, isLoading, createSession, updateSession, clearSessions };
 }

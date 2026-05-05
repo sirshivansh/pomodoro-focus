@@ -16,7 +16,7 @@ import { useSessions } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import QuoteDisplay from "./QuoteDisplay";
 import WeeklyHeatmap from "./WeeklyHeatmap";
-import { SessionType, TimerConfig, TimerData, PomodoroSession } from "@shared/schema";
+import { SessionType, TimerConfig, TimerData, PomodoroSession, TimerState } from "@shared/schema";
 import { startOfDay, subDays, format, isSameDay } from "date-fns";
 
 const DEFAULT_CONFIG: TimerConfig = {
@@ -247,7 +247,7 @@ export default function PomodoroApp() {
   const [earnedBadges, setEarnedBadges] = useState<string[]>(() => loadBadges());
   const [newBadge, setNewBadge] = useState<string | null>(null);
   const [focusGoal, setFocusGoal] = useState(() => localStorage.getItem(LS.focusGoal) || "");
-  const { sessions: historyRaw = [], createSession, clearSessions } = useSessions();
+  const { sessions: historyRaw = [], createSession, updateSession, clearSessions } = useSessions();
 
   // DERIVED DATA: Calculate from actual session history
   const history = historyRaw;
@@ -290,6 +290,10 @@ export default function PomodoroApp() {
   };
   const { logoutMutation, user } = useAuth();
   const [completedCount, setCompletedCount] = useState(0);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const currentSessionDurationRef = useRef(0);
+  const lastDateRef = useRef(todayStr());
+  const syncTimerRef = useRef(0);
 
   const [timerData, setTimerData] = useState<TimerData>(() => {
     const cfg = loadConfig();
@@ -311,6 +315,7 @@ export default function PomodoroApp() {
 
   const handleStart = useCallback(() => {
     if (!sessionTrueStartRef.current) sessionTrueStartRef.current = new Date().toISOString();
+    lastDateRef.current = todayStr(); // Fresh date on start
     setTimerData(p => ({ ...p, state: "running" }));
     if (config.soundEnabled) {
       playClockSound("start");
@@ -321,6 +326,9 @@ export default function PomodoroApp() {
   const handlePause = useCallback(() => setTimerData(p => ({ ...p, state: "paused" })), []);
   const handleReset = useCallback(() => {
     sessionTrueStartRef.current = "";
+    setCurrentSessionId(null);
+    currentSessionDurationRef.current = 0;
+    syncTimerRef.current = 0;
     setTimerData(p => ({ ...p, timeRemaining: p.totalTime, state: "idle" }));
   }, []);
 
@@ -376,6 +384,62 @@ export default function PomodoroApp() {
     }
   }, [displayTotalMins]);
 
+  const syncCurrentSession = useCallback(async (type: SessionType, isCompleted = false) => {
+    const duration = currentSessionDurationRef.current;
+    if (duration <= 0 && !isCompleted) return;
+
+    try {
+      if (currentSessionId) {
+        await updateSession.mutateAsync({
+          id: currentSessionId,
+          updates: { duration, completed: isCompleted, endTime: new Date().toISOString() }
+        });
+      } else {
+        const startTime = sessionTrueStartRef.current || new Date(Date.now() - duration * 1000).toISOString();
+        const res = await createSession.mutateAsync({
+          type,
+          duration,
+          completed: isCompleted,
+          startTime: startTime,
+        } as any);
+        setCurrentSessionId(res.id);
+      }
+      syncTimerRef.current = 0;
+    } catch (err) {
+      console.error("[Sync] Real-time sync failed:", err);
+    }
+  }, [currentSessionId, createSession, updateSession]);
+
+  const handleMidnightSplit = useCallback(async (type: SessionType) => {
+    const today = todayStr();
+    if (lastDateRef.current === today) return; // Already split
+    
+    console.log("[Midnight] Date changed, splitting session...");
+    const oldId = currentSessionId;
+    const oldDuration = currentSessionDurationRef.current;
+    
+    // Mark as split immediately
+    lastDateRef.current = today;
+    
+    // 1. Sync current accumulation to the old session and mark it as completed for that day
+    if (oldId) {
+      try {
+        await updateSession.mutateAsync({
+          id: oldId,
+          updates: { duration: oldDuration, completed: true, endTime: new Date().toISOString() }
+        });
+      } catch (err) {
+        console.error("[Midnight] Failed to sync old session:", err);
+      }
+    }
+    
+    // 2. Reset for new day
+    setCurrentSessionId(null);
+    currentSessionDurationRef.current = 0;
+    syncTimerRef.current = 0;
+    sessionTrueStartRef.current = new Date().toISOString(); 
+  }, [currentSessionId, updateSession]);
+
   const skipToNext = useCallback((current: TimerData, cfg: TimerConfig, completed: boolean) => {
     if (transitioningRef.current) return;
     transitioningRef.current = true;
@@ -391,27 +455,9 @@ export default function PomodoroApp() {
 
       if (completed) {
         const durationMins = Math.floor(cfg.workDuration / 60);
-        // Use true start time if available, otherwise back-calculate
-        const startTime = sessionTrueStartRef.current || new Date(Date.now() - cfg.workDuration * 1000).toISOString();
-
-        console.log(`[Sync] Saving focus session. Duration: ${durationMins}m, Start: ${startTime}`);
-
-        const record = {
-          type: "work" as const,
-          duration: cfg.workDuration,
-          completed: true,
-          startTime: startTime,
-        };
-
-        createSession.mutate(record as any, {
-          onError: (err) => {
-            console.error("[Sync] Cloud save failed:", err);
-            toast({ title: "Sync Failed", description: "Session saved locally, will retry later.", variant: "destructive" });
-          },
-          onSuccess: () => {
-            toast({ title: "Session Synced ✨", description: `Saved ${durationMins}m focus.` });
-          }
-        });
+        
+        // Sync final state of the session
+        syncCurrentSession("work", true);
 
         setCompletedCount(c => c + 1);
 
@@ -424,16 +470,8 @@ export default function PomodoroApp() {
       nextSession = "work";
       nextDuration = cfg.workDuration;
       if (completed) {
-        const startTime = sessionTrueStartRef.current || new Date(Date.now() - current.totalTime * 1000).toISOString();
-        const record = {
-          type: current.currentSession,
-          duration: current.totalTime,
-          completed: true,
-          startTime: startTime,
-        };
-        createSession.mutate(record as any, {
-          onError: (err) => console.error("[Sync] Break sync failed:", err),
-        });
+        // Sync final state of the break
+        syncCurrentSession(current.currentSession, true);
 
         if (cfg.soundEnabled) playBeep("break");
         if (cfg.notificationsEnabled) sendNotification("Break over!", "Ready to focus again?");
@@ -442,7 +480,13 @@ export default function PomodoroApp() {
       }
     }
 
-    const nextState = autoStartRef.current && completed ? "running" : "idle";
+    // Reset real-time tracking for the next session
+    setCurrentSessionId(null);
+    currentSessionDurationRef.current = 0;
+    syncTimerRef.current = 0;
+    lastDateRef.current = todayStr();
+
+    const nextState = (autoStartRef.current && completed ? "running" : "idle") as TimerState;
     if (nextState === "running") {
       sessionStartRef.current = nowTime();
       sessionTrueStartRef.current = new Date().toISOString();
@@ -480,6 +524,27 @@ export default function PomodoroApp() {
         const now = Date.now();
         const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current! - now) / 1000));
 
+        // Real-time tracking logic
+        const prevRemaining = timerDataRef.current.timeRemaining;
+        if (remaining !== prevRemaining) {
+          const elapsed = Math.max(0, prevRemaining - remaining);
+          if (elapsed > 0) {
+            currentSessionDurationRef.current += elapsed;
+            syncTimerRef.current += elapsed;
+
+            // Check for midnight split
+            const today = todayStr();
+            if (lastDateRef.current !== today) {
+              handleMidnightSplit(timerDataRef.current.currentSession);
+            }
+
+            // Periodic sync (every 30 seconds)
+            if (syncTimerRef.current >= 30) {
+              syncCurrentSession(timerDataRef.current.currentSession);
+            }
+          }
+        }
+
         if (remaining <= 0) {
           clearInterval(timerId);
           expectedEndTimeRef.current = null;
@@ -488,13 +553,12 @@ export default function PomodoroApp() {
         }
 
         setTimerData(prev => {
-          // Only update if the second has actually changed to prevent jitter
           if (remaining !== prev.timeRemaining) {
             return { ...prev, timeRemaining: remaining };
           }
           return prev;
         });
-      }, 100); // 10Hz check for high precision
+      }, 100);
       intervalRef.current = timerId;
       return () => clearInterval(timerId);
     } else {
@@ -536,6 +600,9 @@ export default function PomodoroApp() {
 
   const handleStop = () => {
     sessionTrueStartRef.current = "";
+    setCurrentSessionId(null);
+    currentSessionDurationRef.current = 0;
+    syncTimerRef.current = 0;
     setTimerData(p => ({ ...p, state: "idle", timeRemaining: p.totalTime }));
   };
   const handleSaveSettings = (c: TimerConfig) => {
