@@ -258,7 +258,8 @@ export default function PomodoroApp() {
     const todaySessions = historyRaw.filter((r: any) => {
       const d = new Date(r.startTime);
       const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      return r.type === "work" && ds === today;
+      const isFocus = r.type === "work" || r.type === "focus";
+      return isFocus && ds === today;
     });
     return {
       sessions: todaySessions.length,
@@ -267,12 +268,12 @@ export default function PomodoroApp() {
   }, [historyRaw]);
 
   const displayTotalSessions = useMemo(() => {
-    return historyRaw.filter((r: any) => r.type === "work").length;
+    return historyRaw.filter((r: any) => r.type === "work" || r.type === "focus").length;
   }, [historyRaw]);
 
   const displayTotalMins = useMemo(() => {
     return historyRaw
-      .filter((r: any) => r.type === "work")
+      .filter((r: any) => r.type === "work" || r.type === "focus")
       .reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0);
   }, [historyRaw]);
 

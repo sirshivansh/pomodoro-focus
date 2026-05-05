@@ -31,8 +31,11 @@ function groupByDate(records: PomodoroSession[]): { date: string; items: Pomodor
 
 const SESSION_COLOR: Record<string, string> = {
   "work":         "rgba(255,255,255,0.75)",
+  "focus":        "rgba(255,255,255,0.75)",
   "short-break":  "rgba(100,210,170,0.75)",
+  "shortBreak":   "rgba(100,210,170,0.75)",
   "long-break":   "rgba(140,175,255,0.75)",
+  "longBreak":    "rgba(140,175,255,0.75)",
 };
 
 interface HistoryListProps {
@@ -98,7 +101,7 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
               <div className="flex-1 min-w-0">
                 {/* Goal */}
                 <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
-                  {record.type === "work" ? "Focus Session" : record.type === "short-break" ? "Short Break" : "Long Break"}
+                  {(record.type === "work" || record.type === "focus") ? "Focus Session" : (record.type === "short-break" || record.type === "shortBreak") ? "Short Break" : "Long Break"}
                 </p>
                 {/* Meta */}
                 <div className="flex items-center gap-3 mt-1.5">

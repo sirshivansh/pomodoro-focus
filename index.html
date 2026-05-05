@@ -412,7 +412,7 @@
                 </div>
                 <span class="font-raj font-bold text-base tracking-wider">POMOFOCUS</span>
             </div>
-            <p class="text-[11px] text-white/30 ml-[42px] -mt-0.5 font-medium tracking-wide">DOCS v1.0</p>
+            <p class="text-[11px] text-white/30 ml-[42px] -mt-0.5 font-medium tracking-wide">DOCS v1.6.0</p>
         </div>
 
         <div class="flex-1 overflow-y-auto px-3 pb-6">
@@ -1361,23 +1361,17 @@
                                     <div class="code-header">
                                         <span class="text-[11px] text-white/30">Response (200)</span>
                                     </div>
-                                    <pre><code>{
-  <span class="type">"sessions"</span>: [
-    {
-      <span class="type">"id"</span>: <span class="number">1</span>,
-      <span class="type">"type"</span>: <span class="string">"focus"</span>,
-      <span class="type">"duration"</span>: <span class="number">25</span>,
-      <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
-    }
-  ],
-  <span class="type">"analytics"</span>: {
-    <span class="type">"currentStreak"</span>: <span class="number">5</span>,
-    <span class="type">"bestStreak"</span>: <span class="number">12</span>,
-    <span class="type">"totalSessions"</span>: <span class="number">87</span>,
-    <span class="type">"totalMinutes"</span>: <span class="number">2175</span>,
-    <span class="type">"heatmap"</span>: [...]
+                                    <pre><code>[
+  {
+    <span class="type">"id"</span>: <span class="string">"uuid"</span>,
+    <span class="type">"userId"</span>: <span class="string">"uuid"</span>,
+    <span class="type">"type"</span>: <span class="string">"work"</span>,
+    <span class="type">"duration"</span>: <span class="number">1500</span>,
+    <span class="type">"completed"</span>: <span class="number">true</span>,
+    <span class="type">"startTime"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>,
+    <span class="type">"endTime"</span>: <span class="string">"2025-01-15T10:55:00Z"</span>
   }
-}</code></pre>
+]</code></pre>
                                 </div>
                             </div>
                         </div>
@@ -1402,9 +1396,10 @@
                                         <span class="text-[11px] text-white/30">Request Body</span>
                                     </div>
                                     <pre><code>{
-  <span class="type">"type"</span>: <span class="string">"focus"</span>,       <span class="comment">// "focus" | "shortBreak" | "longBreak"</span>
-  <span class="type">"duration"</span>: <span class="number">25</span>,          <span class="comment">// in minutes</span>
-  <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
+  <span class="type">"type"</span>: <span class="string">"work"</span>,          <span class="comment">// "work" | "short-break" | "long-break"</span>
+  <span class="type">"duration"</span>: <span class="number">1500</span>,        <span class="comment">// in seconds</span>
+  <span class="type">"completed"</span>: <span class="number">false</span>,
+  <span class="type">"startTime"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
 }</code></pre>
                                 </div>
                             </div>

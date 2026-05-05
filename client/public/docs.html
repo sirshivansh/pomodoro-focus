@@ -1213,23 +1213,17 @@
                                     <div class="code-header">
                                         <span class="text-[11px] text-white/30">Response (200)</span>
                                     </div>
-                                    <pre><code>{
-  <span class="type">"sessions"</span>: [
-    {
-      <span class="type">"id"</span>: <span class="number">1</span>,
-      <span class="type">"type"</span>: <span class="string">"focus"</span>,
-      <span class="type">"duration"</span>: <span class="number">25</span>,
-      <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
-    }
-  ],
-  <span class="type">"analytics"</span>: {
-    <span class="type">"currentStreak"</span>: <span class="number">5</span>,
-    <span class="type">"bestStreak"</span>: <span class="number">12</span>,
-    <span class="type">"totalSessions"</span>: <span class="number">87</span>,
-    <span class="type">"totalMinutes"</span>: <span class="number">2175</span>,
-    <span class="type">"heatmap"</span>: [...]
+                                    <pre><code>[
+  {
+    <span class="type">"id"</span>: <span class="string">"uuid"</span>,
+    <span class="type">"userId"</span>: <span class="string">"uuid"</span>,
+    <span class="type">"type"</span>: <span class="string">"work"</span>,
+    <span class="type">"duration"</span>: <span class="number">1500</span>,
+    <span class="type">"completed"</span>: <span class="number">true</span>,
+    <span class="type">"startTime"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>,
+    <span class="type">"endTime"</span>: <span class="string">"2025-01-15T10:55:00Z"</span>
   }
-}</code></pre>
+]</code></pre>
                                 </div>
                             </div>
                         </div>
@@ -1254,9 +1248,10 @@
                                         <span class="text-[11px] text-white/30">Request Body</span>
                                     </div>
                                     <pre><code>{
-  <span class="type">"type"</span>: <span class="string">"focus"</span>,       <span class="comment">// "focus" | "shortBreak" | "longBreak"</span>
-  <span class="type">"duration"</span>: <span class="number">25</span>,          <span class="comment">// in minutes</span>
-  <span class="type">"completedAt"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
+  <span class="type">"type"</span>: <span class="string">"work"</span>,          <span class="comment">// "work" | "short-break" | "long-break"</span>
+  <span class="type">"duration"</span>: <span class="number">1500</span>,        <span class="comment">// in seconds</span>
+  <span class="type">"completed"</span>: <span class="number">false</span>,
+  <span class="type">"startTime"</span>: <span class="string">"2025-01-15T10:30:00Z"</span>
 }</code></pre>
                                 </div>
                             </div>
@@ -1320,43 +1315,74 @@
                 <p class="text-white/40 text-sm mb-8 ml-11">Release history and notable changes.</p>
 
                 <div class="space-y-6">
+                    <!-- v1.6.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.6</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/90">v1.6.0 — The Real-Time Resilience Update</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                                    style="background:rgba(245,158,11,0.1);color:#f59e0b;">Latest</span>
+                            </div>
+                            <p class="text-xs text-white/30 mb-3">Data loss prevention and multi-day accuracy</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Real-time 30s session sync</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Midnight Session Split Logic</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: API PATCH route for duration updates</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- v1.5.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#d97706,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.5</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/80">v1.5.0 — Achievement Ascension</span>
+                            </div>
+                            <p class="text-xs text-white/30 mb-3">Redesigned badge system and dynamic data sync</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Redesigned High-Fidelity Badges</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Dynamic Data Sync Architecture</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- v1.4.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.4</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/80">v1.4.0 — The Stability Shield</span>
+                            </div>
+                            <p class="text-xs text-white/30 mb-3">Critical fix for render-blocking errors</p>
+                        </div>
+                    </div>
+
                     <!-- v1.0.0 -->
                     <div class="relative pl-10">
                         <div class="timeline-line"></div>
                         <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
-                            style="background:linear-gradient(135deg,#d97706,#b45309);">
+                            style="background:linear-gradient(135deg,#d97706,#b45309); opacity: 0.5;">
                             <span class="text-[10px] font-bold text-white">1.0</span>
                         </div>
                         <div>
                             <div class="flex items-center gap-2 mb-1">
-                                <span class="text-sm font-semibold text-white/90">v1.0.0</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                                    style="background:rgba(245,158,11,0.1);color:#f59e0b;">Latest</span>
+                                <span class="text-sm font-semibold text-white/40">v1.0.0</span>
                             </div>
-                            <p class="text-xs text-white/30 mb-3">Initial production release</p>
-                            <div class="flex flex-wrap gap-1.5">
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Full auth flow</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Pomodoro timer engine</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Cloud sync</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Analytics dashboard</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Achievement system</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Keyboard shortcuts</span>
-                                <span
-                                    class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/10">Added:
-                                    Settings panel</span>
-                            </div>
+                            <p class="text-xs text-white/20 mb-3">Initial production release</p>
                         </div>
                     </div>
                 </div>
@@ -1376,7 +1402,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-white/25">
-                        Documentation v1.0.0 · Built with precision.
+                        Documentation v1.6.0 · Built with precision.
                     </p>
                 </div>
             </footer>

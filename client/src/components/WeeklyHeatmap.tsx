@@ -32,7 +32,7 @@ export default function WeeklyHeatmap({ history }: WeeklyHeatmapProps) {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
     for (const r of history) {
-      if (r.type === "work") {
+      if (r.type === "work" || r.type === "focus") {
         const dateStr = toDateStr(r.startTime);
         map[dateStr] = (map[dateStr] || 0) + 1;
       }

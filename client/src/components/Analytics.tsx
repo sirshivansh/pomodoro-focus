@@ -43,9 +43,9 @@ function processAnalytics(records: SessionRecord[], period: Period) {
     filtered = records.filter(r => toDateStr(r.startTime) >= yearAgoStr);
   }
 
-  const workSessions = filtered.filter(r => r.type === "work");
-  const shortBreakSessions = filtered.filter(r => r.type === "short-break");
-  const longBreakSessions = filtered.filter(r => r.type === "long-break");
+  const workSessions = filtered.filter(r => r.type === "work" || r.type === "focus");
+  const shortBreakSessions = filtered.filter(r => r.type === "short-break" || r.type === "shortBreak");
+  const longBreakSessions = filtered.filter(r => r.type === "long-break" || r.type === "longBreak");
 
   let total = workSessions.length;
   let focusTime = workSessions.reduce((acc, r) => acc + Math.floor(r.duration / 60), 0);
