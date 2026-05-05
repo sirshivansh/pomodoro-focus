@@ -470,7 +470,7 @@
                     <span
                         class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-medium tracking-wide text-white/40"
                         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
-                        v1.5.0
+                        v1.6.0
                     </span>
                 </div>
 
@@ -672,7 +672,7 @@
                         </div>
                     </div>
 
-                    <!-- Feature 11: NEW -->
+                    <!-- Feature 11 -->
                     <div class="feature-card glass border-glow rounded-xl p-6">
                         <div class="flex items-start gap-4">
                             <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
@@ -683,6 +683,36 @@
                             <div>
                                 <h3 class="font-semibold text-white mb-1.5">Comprehensive History Tracking</h3>
                                 <p class="text-sm text-white/45 leading-relaxed">Never lose a moment of work again. Every focus session and break interval is captured in a detailed, beautifully formatted timeline for effortless productivity review.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 12 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(245,158,11,0.15);">
+                                <iconify-icon icon="solar:clock-square-bold-duotone" width="20"
+                                    class="text-accent-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Real-Time Data Persistence</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Sessions are now recorded in real-time. Every 30 seconds, your progress is synced to the cloud, ensuring your focus time is safe even if you close the tab or experience a crash.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 13 -->
+                    <div class="feature-card glass border-glow rounded-xl p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                                style="background:rgba(52,211,153,0.15);">
+                                <iconify-icon icon="solar:calendar-date-bold-duotone" width="20"
+                                    class="text-emerald-400"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white mb-1.5">Smart Midnight Splitting</h3>
+                                <p class="text-sm text-white/45 leading-relaxed">Working across midnight? The engine automatically detects the date change and splits your session into two records, attributing the exact minutes to the correct day for 100% accurate reporting.</p>
                             </div>
                         </div>
                     </div>
@@ -1484,6 +1514,28 @@
                         </div>
                     </div>
 
+                    <!-- v1.6.0 -->
+                    <div class="relative pl-10 mb-10">
+                        <div class="timeline-line"></div>
+                        <div class="absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center glow-amber"
+                            style="background:linear-gradient(135deg,#f59e0b,#ea580c);">
+                            <span class="text-[10px] font-bold text-white">1.6</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-semibold text-white/70">v1.6.0 — The Real-Time Resilience Update</span>
+                            </div>
+                            <p class="text-xs text-white/45 mb-2 font-medium">Faced: Data loss on unexpected tab closures and inaccurate multi-day reporting for sessions crossing midnight.</p>
+                            <p class="text-[11px] text-white/30 mb-3">Overcame: Implemented a periodic real-time sync engine (every 30s) and a smart date-boundary detection system that atomically splits sessions at 00:00.</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Real-time 30s session sync</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: Midnight Session Split Logic</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Added: API PATCH route for duration updates</span>
+                                <span class="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/8 text-amber-400/70 border border-amber-500/10">Fixed: Stale date reference on startup</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- v1.5.0 -->
                     <div class="relative pl-10 mb-10">
                         <div class="timeline-line"></div>
@@ -1638,7 +1690,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-white/25">
-                        Documentation v1.4.0 · Built with precision.
+                        Documentation v1.6.0 · Built with precision.
                     </p>
                 </div>
             </footer>
