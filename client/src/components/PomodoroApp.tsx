@@ -809,55 +809,63 @@ export default function PomodoroApp() {
         </header>
 
         {/* CENTER MAIN CONTENT: TIMER & CONTROLS */}
-        <section className="flex-1 flex flex-col items-center justify-center gap-2.5 sm:gap-3 py-1">
-          {/* SESSION MODE TAB SWITCHER & TASK/DURATION BAR (SMOOTH FADE OUT WHEN RUNNING) */}
-          <div className={`flex flex-col items-center gap-2.5 sm:gap-3 transition-all duration-700 ease-in-out ${
+        <section className="flex-1 flex flex-col items-center justify-center gap-3 md:gap-4 py-1">
+          {/* SESSION MODE TAB SWITCHER */}
+          <div className={`flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg transition-all duration-700 ease-in-out ${
             timerData.state === "running"
               ? "opacity-0 -translate-y-4 max-h-0 pointer-events-none overflow-hidden"
               : "opacity-100 translate-y-0 max-h-40"
           }`}>
-            <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
-              {SESSION_TABS.map(({ key, label }) => {
-                const active = timerData.currentSession === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => switchSession(key)}
-                    data-testid={`button-session-${key}`}
-                    className={`px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
-                      active
-                        ? "bg-amber-500 text-black shadow-[0_0_15px_rgba(245,166,35,0.4)]"
-                        : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {timerData.currentSession === "work" && (
-              <TaskDurationPresets
-                activeTag={activeTaskTag}
-                onSelectTag={handleSelectTag}
-                workDurationMinutes={Math.floor(config.workDuration / 60)}
-                onSelectDuration={handleSelectWorkDuration}
-                isTimerRunning={timerData.state === "running"}
-              />
-            )}
+            {SESSION_TABS.map(({ key, label }) => {
+              const active = timerData.currentSession === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => switchSession(key)}
+                  data-testid={`button-session-${key}`}
+                  className={`px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                    active
+                      ? "bg-amber-500 text-black shadow-[0_0_15px_rgba(245,166,35,0.4)]"
+                      : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* LARGE AMBER TIMER DISPLAY */}
-          <div className="relative my-1">
-            <Timer 
-              timeRemaining={timerData.timeRemaining} 
-              totalTime={timerData.totalTime} 
-              currentSession={timerData.currentSession} 
-              state={timerData.state}
-              taskTag={activeTaskTag}
-              sessionsCompleted={timerData.sessionsCompleted}
-              sessionsUntilLongBreak={config.sessionsUntilLongBreak}
-            />
+          {/* TIMER & RIGHT-SIDE DOCKED VERTICAL TASK/DURATION PANEL */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 w-full max-w-4xl my-1 relative">
+            {/* LARGE AMBER TIMER DISPLAY */}
+            <div className="relative">
+              <Timer 
+                timeRemaining={timerData.timeRemaining} 
+                totalTime={timerData.totalTime} 
+                currentSession={timerData.currentSession} 
+                state={timerData.state}
+                taskTag={activeTaskTag}
+                sessionsCompleted={timerData.sessionsCompleted}
+                sessionsUntilLongBreak={config.sessionsUntilLongBreak}
+              />
+            </div>
+
+            {/* RIGHT-SIDE DOCKED VERTICAL TASK & DURATION PANEL */}
+            {timerData.currentSession === "work" && (
+              <div className={`transition-all duration-700 ease-in-out ${
+                timerData.state === "running"
+                  ? "opacity-0 translate-x-8 max-w-0 pointer-events-none overflow-hidden"
+                  : "opacity-100 translate-x-0 max-w-xs"
+              }`}>
+                <TaskDurationPresets
+                  activeTag={activeTaskTag}
+                  onSelectTag={handleSelectTag}
+                  workDurationMinutes={Math.floor(config.workDuration / 60)}
+                  onSelectDuration={handleSelectWorkDuration}
+                  isTimerRunning={timerData.state === "running"}
+                />
+              </div>
+            )}
           </div>
 
           {/* PILL CONTROL BUTTONS */}

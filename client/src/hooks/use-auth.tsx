@@ -21,11 +21,33 @@ async function fetchUser() {
   const res = await fetch("/api/user", {
     credentials: "include"
   });
-  if (!res.ok) {
-    if (res.status === 401) return null;
-    throw new Error("Failed to fetch user");
+  if (res.ok) {
+    return res.json();
   }
-  return res.json();
+
+  if (res.status === 401) {
+    // Attempt auto-login if saved credentials exist in localStorage
+    try {
+      const saved = localStorage.getItem("ft_saved_credentials");
+      if (saved) {
+        const credentials = JSON.parse(saved);
+        if (credentials.email && credentials.password) {
+          const loginRes = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(credentials),
+            credentials: "include",
+          });
+          if (loginRes.ok) {
+            return loginRes.json();
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  throw new Error("Failed to fetch user");
 }
 
 function useLoginMutation() {
@@ -49,7 +71,11 @@ function useLoginMutation() {
         }
         throw new Error(msg);
       }
-      return res.json();
+      const data = await res.json();
+      try {
+        localStorage.setItem("ft_saved_credentials", JSON.stringify({ email: credentials.email, password: credentials.password }));
+      } catch (_) {}
+      return data;
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -82,7 +108,11 @@ function useRegisterMutation() {
         }
         throw new Error(msg);
       }
-      return res.json();
+      const data = await res.json();
+      try {
+        localStorage.setItem("ft_saved_credentials", JSON.stringify({ email: credentials.email, password: credentials.password }));
+      } catch (_) {}
+      return data;
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -98,6 +128,9 @@ function useLogoutMutation() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async () => {
+      try {
+        localStorage.removeItem("ft_saved_credentials");
+      } catch (_) {}
       const res = await fetch("/api/logout", { 
         method: "POST",
         credentials: "include"
