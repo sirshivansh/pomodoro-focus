@@ -39,8 +39,15 @@ function useLoginMutation() {
         credentials: "include",
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Login failed");
+        let msg = "Invalid email or password";
+        try {
+          const error = await res.json();
+          msg = error.message || msg;
+        } catch {
+          const text = await res.text();
+          if (text && text.length < 100) msg = text;
+        }
+        throw new Error(msg);
       }
       return res.json();
     },
@@ -65,8 +72,15 @@ function useRegisterMutation() {
         credentials: "include",
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Registration failed");
+        let msg = "Registration failed";
+        try {
+          const error = await res.json();
+          msg = error.message || msg;
+        } catch {
+          const text = await res.text();
+          if (text && text.length < 100) msg = text;
+        }
+        throw new Error(msg);
       }
       return res.json();
     },
