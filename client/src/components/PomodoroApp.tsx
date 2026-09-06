@@ -252,6 +252,15 @@ export default function PomodoroApp() {
     }
   });
 
+  const [splineMode, setSplineMode] = useState<"gpu-grid" | "spline-3d">(() => {
+    try {
+      const saved = localStorage.getItem("ft_spline_mode");
+      return (saved === "spline-3d" ? "spline-3d" : "gpu-grid") as any;
+    } catch {
+      return "gpu-grid";
+    }
+  });
+
   const handleToggleSpline = (enabled: boolean) => {
     setSplineEnabled(enabled);
     try {
@@ -263,6 +272,13 @@ export default function PomodoroApp() {
     setSplineOpacity(opacity);
     try {
       localStorage.setItem("ft_spline_opacity", String(opacity));
+    } catch {}
+  };
+
+  const handleChangeSplineMode = (mode: "gpu-grid" | "spline-3d") => {
+    setSplineMode(mode);
+    try {
+      localStorage.setItem("ft_spline_mode", mode);
     } catch {}
   };
 
@@ -629,8 +645,8 @@ export default function PomodoroApp() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#07070f] text-white relative">
-      {/* 3D Spline Backlight Background */}
-      <SplineBackground enabled={splineEnabled} opacity={splineOpacity} />
+      {/* 3D Ambient Backlight Background */}
+      <SplineBackground enabled={splineEnabled} opacity={splineOpacity} mode={splineMode} />
 
       {/* Subtle Background Glow */}
       <div style={{
@@ -670,6 +686,8 @@ export default function PomodoroApp() {
             onToggleEnabled={handleToggleSpline}
             opacity={splineOpacity}
             onChangeOpacity={handleChangeSplineOpacity}
+            mode={splineMode}
+            onChangeMode={handleChangeSplineMode}
           />
 
           <NavIconButton 
