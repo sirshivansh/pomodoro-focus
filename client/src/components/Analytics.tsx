@@ -132,6 +132,39 @@ function processAnalytics(records: SessionRecord[], period: Period) {
     heatmapWeeks.push(daysInWeek);
   }
 
+  // Task Tag Breakdown computation
+  const tagMap = new Map<string, number>();
+  workSessions.forEach((r: any) => {
+    const tag = r.taskTag || "#coding";
+    const mins = Math.floor(r.duration / 60);
+    tagMap.set(tag, (tagMap.get(tag) || 0) + mins);
+  });
+
+  if (tagMap.size === 0) {
+    tagMap.set("#coding", 145);
+    tagMap.set("#reading", 60);
+    tagMap.set("#design", 90);
+    tagMap.set("#deep-work", 120);
+  }
+
+  const maxMins = Math.max(...Array.from(tagMap.values()), 1);
+  const tagColors: Record<string, string> = {
+    "#coding": "#10b981",
+    "#reading": "#f5a623",
+    "#writing": "#ec4899",
+    "#design": "#8b5cf6",
+    "#deep-work": "#3b82f6",
+    "#sprint": "#06b6d4",
+  };
+
+  const taskTagData = Array.from(tagMap.entries()).map(([tag, mins]) => ({
+    tag,
+    mins,
+    hours: parseFloat((mins / 60).toFixed(1)),
+    pct: Math.min(100, Math.round((mins / maxMins) * 100)),
+    color: tagColors[tag] || "#10b981",
+  })).sort((a, b) => b.mins - a.mins);
+
   return {
     totalFocusMins,
     totalSessions: workSessions.length || 18,
@@ -141,6 +174,7 @@ function processAnalytics(records: SessionRecord[], period: Period) {
     timeSeriesData,
     scoreData,
     heatmapWeeks,
+    taskTagData,
   };
 }
 
@@ -424,26 +458,21 @@ export default function Analytics({ className }: AnalyticsProps) {
           </div>
         </GlassCard>
 
-        {/* TOP EFFORT & GOALS (PROGRESS BARS) */}
+        {/* TOP EFFORT BY TASK & PROJECT TAG */}
         <GlassCard>
           <div className="mb-6">
             <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white/95 flex items-center gap-2">
-              <Target className="w-4 h-4 text-emerald-400" /> TOP EFFORT & GOALS
+              <Target className="w-4 h-4 text-emerald-400" /> TASK & PROJECT TIME
             </h3>
-            <p className="text-xs text-white/40 mt-0.5">Time logged by focus categories</p>
+            <p className="text-xs text-white/40 mt-0.5">Time logged by task and project tags</p>
           </div>
 
           <div className="space-y-4">
-            {[
-              { title: "Project Alpha (Core Dev)", hours: "64h", pct: 85, color: "#10b981" },
-              { title: "Project Beta (UI Redesign)", hours: "23h", pct: 60, color: "#f5a623" },
-              { title: "Code Refactoring & Docs", hours: "10h", pct: 40, color: "#3b82f6" },
-              { title: "Planning & Architecture", hours: "6h", pct: 25, color: "#8b5cf6" },
-            ].map(item => (
-              <div key={item.title} className="space-y-2">
+            {data.taskTagData.slice(0, 5).map(item => (
+              <div key={item.tag} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-white/90">{item.title}</span>
-                  <span className="font-mono text-white/60 font-bold">{item.hours}</span>
+                  <span className="font-semibold font-mono text-amber-400">{item.tag}</span>
+                  <span className="font-mono text-white/70 font-bold">{item.hours > 0 ? `${item.hours}h (${item.mins}m)` : `${item.mins}m`}</span>
                 </div>
                 <div className="h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
                   <div

@@ -17,6 +17,7 @@ export const pomodoroSessions = pgTable("pomodoro_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // "work", "short-break", "long-break"
+  taskTag: text("task_tag"), // e.g. "#coding", "#reading", custom task name
   duration: integer("duration").notNull(), // in seconds
   completed: boolean("completed").notNull().default(false),
   startTime: timestamp("start_time").notNull(),

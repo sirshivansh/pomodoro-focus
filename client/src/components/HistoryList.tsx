@@ -99,10 +99,17 @@ export default function HistoryList({ records, onClear }: HistoryListProps) {
               <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: SESSION_COLOR[record.type] }} />
 
               <div className="flex-1 min-w-0">
-                {/* Goal */}
-                <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
-                  {(record.type === "work" || record.type === "focus") ? "Focus Session" : (record.type === "short-break" || record.type === "shortBreak") ? "Short Break" : "Long Break"}
-                </p>
+                {/* Goal & Tag */}
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium leading-snug" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.88)" }}>
+                    {(record.type === "work" || record.type === "focus") ? "Focus Session" : (record.type === "short-break" || record.type === "shortBreak") ? "Short Break" : "Long Break"}
+                  </p>
+                  {record.taskTag && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono">
+                      {record.taskTag}
+                    </span>
+                  )}
+                </div>
                 {/* Meta */}
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="flex items-center gap-1 text-xs" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.45)" }}>

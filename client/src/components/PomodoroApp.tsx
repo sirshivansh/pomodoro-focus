@@ -14,6 +14,7 @@ import Badges, { BADGE_MILESTONES } from "./Badges";
 import HistoryList from "./HistoryList";
 import SplineBackground from "./SplineBackground";
 import SplineControls from "./SplineControls";
+import TaskDurationPresets from "./TaskDurationPresets";
 import { useSessions } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import WeeklyHeatmap from "./WeeklyHeatmap";
@@ -54,6 +55,12 @@ function loadConfig(): TimerConfig {
     if (r) return { ...DEFAULT_CONFIG, ...JSON.parse(r) };
   } catch { }
   return DEFAULT_CONFIG;
+}
+
+function saveConfig(cfg: TimerConfig) {
+  try {
+    localStorage.setItem(LS.config, JSON.stringify(cfg));
+  } catch { }
 }
 
 function deriveStreak(history: PomodoroSession[]) {
@@ -282,6 +289,36 @@ export default function PomodoroApp() {
     } catch {}
   };
 
+  const [activeTaskTag, setActiveTaskTag] = useState<string>(() => {
+    try {
+      return localStorage.getItem("ft_active_task_tag") || "#coding";
+    } catch {
+      return "#coding";
+    }
+  });
+
+  const handleSelectTag = (tag: string) => {
+    setActiveTaskTag(tag);
+    try {
+      localStorage.setItem("ft_active_task_tag", tag);
+    } catch {}
+  };
+
+  const handleSelectWorkDuration = (mins: number) => {
+    const seconds = mins * 60;
+    const updatedConfig = { ...config, workDuration: seconds };
+    setConfig(updatedConfig);
+    saveConfig(updatedConfig);
+
+    if (timerData.currentSession === "work") {
+      setTimerData((prev) => ({
+        ...prev,
+        timeRemaining: prev.state === "idle" ? seconds : prev.timeRemaining,
+        totalTime: seconds,
+      }));
+    }
+  };
+
   const [config, setConfig] = useState<TimerConfig>(() => loadConfig());
   const [earnedBadges, setEarnedBadges] = useState<string[]>(() => loadBadges());
   const [newBadge, setNewBadge] = useState<string | null>(null);
@@ -444,6 +481,7 @@ export default function PomodoroApp() {
         const startTime = sessionTrueStartRef.current || new Date(Date.now() - duration * 1000).toISOString();
         const res = await createSession.mutateAsync({
           type,
+          taskTag: type === "work" ? activeTaskTag : undefined,
           duration,
           completed: isCompleted,
           startTime: startTime,
@@ -454,7 +492,7 @@ export default function PomodoroApp() {
     } catch (err) {
       console.error("[Sync] Real-time sync failed:", err);
     }
-  }, [currentSessionId, createSession, updateSession]);
+  }, [currentSessionId, createSession, updateSession, activeTaskTag]);
 
   const handleMidnightSplit = useCallback(async (type: SessionType) => {
     const today = todayStr();
@@ -787,6 +825,17 @@ export default function PomodoroApp() {
             })}
           </div>
 
+          {/* TASK & DURATION PRESETS CONTROL BAR */}
+          {timerData.currentSession === "work" && (
+            <TaskDurationPresets
+              activeTag={activeTaskTag}
+              onSelectTag={handleSelectTag}
+              workDurationMinutes={Math.floor(config.workDuration / 60)}
+              onSelectDuration={handleSelectWorkDuration}
+              isTimerRunning={timerData.state === "running"}
+            />
+          )}
+
           {/* LARGE AMBER TIMER DISPLAY */}
           <div className="relative my-1">
             <Timer 
@@ -794,6 +843,7 @@ export default function PomodoroApp() {
               totalTime={timerData.totalTime} 
               currentSession={timerData.currentSession} 
               state={timerData.state}
+              taskTag={activeTaskTag}
               sessionsCompleted={timerData.sessionsCompleted}
               sessionsUntilLongBreak={config.sessionsUntilLongBreak}
             />

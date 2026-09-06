@@ -7,6 +7,7 @@ interface TimerProps {
   totalTime: number;
   currentSession: SessionType;
   state: TimerState;
+  taskTag?: string;
   sessionsCompleted?: number;
   sessionsUntilLongBreak?: number;
   className?: string;
@@ -35,6 +36,7 @@ export default function Timer({
   totalTime,
   currentSession,
   state,
+  taskTag,
   sessionsCompleted = 0,
   sessionsUntilLongBreak = 4,
   className,
@@ -207,7 +209,7 @@ export default function Timer({
         {/* Session label */}
         <text
           x={CX}
-          y={CY + 32}
+          y={CY + (taskTag && currentSession === "work" ? 26 : 32)}
           textAnchor="middle"
           style={{
             fontFamily: "'Rajdhani',sans-serif",
@@ -220,10 +222,28 @@ export default function Timer({
           {SESSION_LABEL[currentSession]}
         </text>
 
+        {/* Task Tag Badge */}
+        {taskTag && currentSession === "work" && (
+          <text
+            x={CX}
+            y={CY + 40}
+            textAnchor="middle"
+            style={{
+              fontFamily: "'Space Grotesk',sans-serif",
+              fontSize: "10px",
+              fontWeight: 600,
+              fill: "#f5a623",
+              letterSpacing: "1px",
+            }}
+          >
+            {taskTag}
+          </text>
+        )}
+
         {/* Session counter */}
         <text
           x={CX}
-          y={CY + 48}
+          y={CY + (taskTag && currentSession === "work" ? 54 : 48)}
           textAnchor="middle"
           style={{
             fontFamily: "'Rajdhani',sans-serif",

@@ -238,6 +238,7 @@ export class MemStorage implements IStorage {
       id,
       userId,
       type: data.type,
+      taskTag: data.taskTag ?? null,
       duration: data.duration,
       completed: data.completed ?? false,
       startTime: new Date(data.startTime),
