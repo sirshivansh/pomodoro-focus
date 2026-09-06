@@ -803,7 +803,7 @@ export default function PomodoroApp() {
         </header>
 
         {/* CENTER MAIN CONTENT: TIMER & CONTROLS */}
-        <section className="flex-1 flex flex-col items-center justify-center gap-4 py-1">
+        <section className="flex-1 flex flex-col items-center justify-center gap-2.5 sm:gap-3 py-1">
           {/* SESSION MODE TAB SWITCHER */}
           <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
             {SESSION_TABS.map(({ key, label }) => {
