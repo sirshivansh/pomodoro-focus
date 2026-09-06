@@ -13,7 +13,7 @@
 
 **PomoFocusTrack** is a production-grade, cloud-synchronized Pomodoro productivity suite. Engineered with an agency-grade design philosophy, it bridges the gap between high-end aesthetic beauty and high-performance focus tools.
 
-🚀 **Live Production Application**: [https://pomodoro-focus.onrender.com](https://pomodoro-focus.onrender.com)
+🚀 **Try Live Application**: [**https://pomodoro-focus.onrender.com**](https://pomodoro-focus.onrender.com)
 
 ---
 
@@ -96,7 +96,7 @@ Track deep work, short breaks, and long breaks with dynamic ambient lighting tra
 
 ---
 
-## 📁 Project Architecture & Clean Structure
+## 📁 Project Architecture
 
 ```text
 PomoFocusTrack/
@@ -111,7 +111,7 @@ PomoFocusTrack/
 │   ├── pomofocus_mini_timer.png
 │   └── pomofocus_auth_login.png
 ├── client/                     # Frontend Application (React 18 + Vite)
-│   ├── public/                 # Static assets (favicon, docs.html)
+│   ├── public/                 # Static web assets (favicon, docs.html)
 │   └── src/
 │       ├── components/         # Timer, Analytics, SplineBackground, SplineControls, Stats, Badges
 │       ├── hooks/              # useAuth, useSessions, useToast hooks
@@ -145,62 +145,11 @@ PomoFocusTrack/
 
 ---
 
-## 💻 Getting Started
+## 🌐 Live Application & Deployment
 
-### Prerequisites
-- **Node.js**: v20.0.0 or higher
-- **npm** / **pnpm** / **yarn**
+The application is deployed live and hosted on Render:
 
-### Installation
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/sirshivansh/pomodoro-focus.git
-   cd PomoFocusTrack
-   ```
-
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory:
-   ```env
-   DATABASE_URL=postgresql://user:password@endpoint.neon.tech/neondb?sslmode=require
-   SESSION_SECRET=your_super_secret_session_key
-   RESEND_API_KEY=re_your_resend_api_key_here
-   FROM_EMAIL=onboarding@resend.dev
-   ```
-
-4. **Initialize Database Schema**:
-   ```bash
-   npm run db:push
-   ```
-
-### Running Locally
-
-```bash
-# Start full-stack development server (Express + Vite hot reload)
-npm run dev
-```
-
-Open [http://localhost:5000](http://localhost:5000) in your browser.
-
----
-
-## 🚢 Production Deployment
-
-This application is ready for one-click automatic deployment on **Render** or **Vercel / Railway**.
-
-1. **Build Command**: `npm run build`
-2. **Start Command**: `npm run start`
-3. **Required Environment Variables**:
-   - `DATABASE_URL`: Neon PostgreSQL connection URI
-   - `SESSION_SECRET`: Session secret key
-   - `RESEND_API_KEY`: Resend API key for emails
-
-The build pipeline compiles the frontend bundle into `dist/public` and bundles the backend server into `dist/index.js`.
+👉 **[Launch PomoFocusTrack](https://pomodoro-focus.onrender.com)**
 
 ---
 
