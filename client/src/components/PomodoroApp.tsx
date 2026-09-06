@@ -696,7 +696,9 @@ export default function PomodoroApp() {
       }} />
 
       {/* LEFT ICON SIDEBAR */}
-      <aside className="w-16 md:w-20 bg-[#0c0d14]/90 backdrop-blur-xl border-r border-[#1e1f2b] flex flex-col items-center py-6 gap-6 z-20 flex-shrink-0 select-none">
+      <aside className={`w-16 md:w-20 bg-[#0c0d14]/90 backdrop-blur-xl border-r border-[#1e1f2b] flex flex-col items-center py-6 gap-6 z-20 flex-shrink-0 select-none transition-all duration-700 ease-in-out ${
+        timerData.state === "running" ? "-translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+      }`}>
         {/* Brand / Logo */}
         <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(245,166,35,0.2)]">
           <Flame className="w-5 h-5 text-amber-500 fill-amber-500/20" />
@@ -753,9 +755,13 @@ export default function PomodoroApp() {
       </aside>
 
       {/* MAIN DASHBOARD CONTENT AREA */}
-      <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar px-4 md:px-8 py-3 md:py-5 gap-3 md:gap-5 relative z-10 max-w-7xl mx-auto w-full justify-between">
+      <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar px-4 md:px-8 py-3 md:py-5 gap-3 md:gap-5 relative z-10 max-w-7xl mx-auto w-full justify-between transition-all duration-700">
         {/* TOP BAR / DASHBOARD HEADER */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1e1f2b]/80">
+        <header className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all duration-700 ease-in-out ${
+          timerData.state === "running"
+            ? "opacity-0 -translate-y-8 max-h-0 py-0 border-none pointer-events-none overflow-hidden"
+            : "opacity-100 translate-y-0 max-h-40 pb-3 border-b border-[#1e1f2b]/80"
+        }`}>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
@@ -804,9 +810,13 @@ export default function PomodoroApp() {
 
         {/* CENTER MAIN CONTENT: TIMER & CONTROLS */}
         <section className="flex-1 flex flex-col items-center justify-center gap-2.5 sm:gap-3 py-1">
-          {/* SESSION MODE TAB SWITCHER */}
-          {timerData.state !== "running" && (
-            <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg animate-in fade-in duration-300">
+          {/* SESSION MODE TAB SWITCHER & TASK/DURATION BAR (SMOOTH FADE OUT WHEN RUNNING) */}
+          <div className={`flex flex-col items-center gap-2.5 sm:gap-3 transition-all duration-700 ease-in-out ${
+            timerData.state === "running"
+              ? "opacity-0 -translate-y-4 max-h-0 pointer-events-none overflow-hidden"
+              : "opacity-100 translate-y-0 max-h-40"
+          }`}>
+            <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
               {SESSION_TABS.map(({ key, label }) => {
                 const active = timerData.currentSession === key;
                 return (
@@ -825,18 +835,17 @@ export default function PomodoroApp() {
                 );
               })}
             </div>
-          )}
 
-          {/* TASK & DURATION PRESETS CONTROL BAR */}
-          {timerData.currentSession === "work" && timerData.state !== "running" && (
-            <TaskDurationPresets
-              activeTag={activeTaskTag}
-              onSelectTag={handleSelectTag}
-              workDurationMinutes={Math.floor(config.workDuration / 60)}
-              onSelectDuration={handleSelectWorkDuration}
-              isTimerRunning={false}
-            />
-          )}
+            {timerData.currentSession === "work" && (
+              <TaskDurationPresets
+                activeTag={activeTaskTag}
+                onSelectTag={handleSelectTag}
+                workDurationMinutes={Math.floor(config.workDuration / 60)}
+                onSelectDuration={handleSelectWorkDuration}
+                isTimerRunning={timerData.state === "running"}
+              />
+            )}
+          </div>
 
           {/* LARGE AMBER TIMER DISPLAY */}
           <div className="relative my-1">
@@ -863,8 +872,12 @@ export default function PomodoroApp() {
           />
         </section>
 
-        {/* BOTTOM DASHBOARD STAT CARDS GRID */}
-        <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 pb-2">
+        {/* BOTTOM DASHBOARD STAT CARDS GRID (SMOOTH FADE OUT WHEN RUNNING) */}
+        <section className={`w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-700 ease-in-out ${
+          timerData.state === "running"
+            ? "opacity-0 translate-y-8 max-h-0 pointer-events-none overflow-hidden pt-0 pb-0"
+            : "opacity-100 translate-y-0 max-h-96 pt-1 pb-2"
+        }`}>
           <StreakCounter 
             currentStreak={streak.current} 
             longestStreak={streak.best} 
