@@ -773,9 +773,26 @@ export default function PomodoroApp() {
                 </span>
               )}
             </div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white/95 mt-1 font-sans">
-              Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}
-            </h1>
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white/95 mt-1 font-sans">
+                Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}
+              </h1>
+              {/* Mobile Quick Action Buttons */}
+              <div className="flex md:hidden items-center gap-1.5 ml-2">
+                <button onClick={() => setShowSidebar(true)} className="p-2 rounded-xl bg-white/5 border border-white/10 text-amber-400 active:scale-90 transition-transform">
+                  <Flame className="w-4 h-4" />
+                </button>
+                <button onClick={() => setShowAnalytics(true)} className="p-2 rounded-xl bg-white/5 border border-white/10 text-emerald-400 active:scale-90 transition-transform">
+                  <BarChart3 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setShowSettings(true)} className="p-2 rounded-xl bg-white/5 border border-white/10 text-blue-400 active:scale-90 transition-transform">
+                  <Settings className="w-4 h-4" />
+                </button>
+                <button onClick={() => setShowProfile(true)} className="p-2 rounded-xl bg-white/5 border border-white/10 text-purple-400 active:scale-90 transition-transform">
+                  <UserIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Quick Header Widget Cards */}
