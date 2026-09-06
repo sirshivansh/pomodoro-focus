@@ -1,23 +1,24 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { BarChart3, Settings, Flame, LogOut, User as UserIcon, Book } from "lucide-react";
+import { BarChart3, Settings, Flame, User as UserIcon, Book, Monitor, CheckCircle2, Target, Sparkles, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Timer from "./Timer";
 import ControlButtons from "./ControlButtons";
 import SessionStats from "./SessionStats";
+import DailyProgress from "./DailyProgress";
 import Analytics from "./Analytics";
 import SettingsPanel from "./SettingsPanel";
 import ProfilePanel from "./ProfilePanel";
-import FocusGoal from "./FocusGoal";
 import StreakCounter from "./StreakCounter";
 import Badges, { BADGE_MILESTONES } from "./Badges";
 import HistoryList from "./HistoryList";
+import SplineBackground from "./SplineBackground";
+import SplineControls from "./SplineControls";
 import { useSessions } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
-import QuoteDisplay from "./QuoteDisplay";
 import WeeklyHeatmap from "./WeeklyHeatmap";
 import { SessionType, TimerConfig, TimerData, PomodoroSession, TimerState } from "@shared/schema";
-import { startOfDay, subDays, format, isSameDay } from "date-fns";
+import { startOfDay, subDays } from "date-fns";
 
 const DEFAULT_CONFIG: TimerConfig = {
   workDuration: 1500,
@@ -44,14 +45,6 @@ function todayStr() {
 }
 function nowTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 
-function loadStreak() {
-  try { const r = localStorage.getItem(LS.streak); if (r) return JSON.parse(r); } catch { }
-  return { current: 0, best: 0, lastDate: "" };
-}
-function loadToday() {
-  return { sessions: 0, mins: 0, date: todayStr() };
-}
-function loadTotalMins() { return 0; }
 function loadBadges(): string[] {
   return [];
 }
@@ -75,7 +68,6 @@ function deriveStreak(history: PomodoroSession[]) {
   let best = 0;
   let temp = 0;
 
-  // Calculate current streak
   if (dates[0] === today || dates[0] === yesterday) {
     let checkDate = dates[0];
     for (let i = 0; i < dates.length; i++) {
@@ -86,7 +78,6 @@ function deriveStreak(history: PomodoroSession[]) {
     }
   }
 
-  // Calculate best streak
   const sortedAsc = [...dates].sort((a, b) => a - b);
   if (sortedAsc.length > 0) {
     temp = 1;
@@ -184,7 +175,6 @@ const SESSION_TABS: { key: SessionType; label: string }[] = [
   { key: "long-break", label: "Long Break" },
 ];
 
-// Persistent Audio Context for robustness
 let sharedAudioCtx: AudioContext | null = null;
 function getAudioCtx() {
   if (!sharedAudioCtx) {
@@ -217,16 +207,17 @@ function SidebarTab({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-function HBtn({ onClick, testId, highlighted, children }: { onClick: () => void; testId: string; highlighted?: boolean; children: React.ReactNode }) {
+function NavIconButton({ onClick, active, tooltip, children, testId }: { onClick: () => void; active?: boolean; tooltip: string; children: React.ReactNode; testId?: string }) {
   return (
     <button
       onClick={onClick}
       data-testid={testId}
-      className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
+      title={tooltip}
+      className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-200 group relative active:scale-95"
       style={{
-        background: highlighted ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)",
-        border: `1px solid ${highlighted ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.1)"}`,
-        color: highlighted ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)",
+        background: active ? "rgba(245,166,35,0.15)" : "rgba(255,255,255,0.04)",
+        border: `1px solid ${active ? "rgba(245,166,35,0.4)" : "rgba(255,255,255,0.08)"}`,
+        color: active ? "#f5a623" : "rgba(255,255,255,0.55)",
       }}
     >
       {children}
@@ -243,13 +234,44 @@ export default function PomodoroApp() {
   const [showProfile, setShowProfile] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"progress" | "history">("progress");
 
+  const [splineEnabled, setSplineEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("ft_spline_enabled");
+      return saved !== "false";
+    } catch {
+      return true;
+    }
+  });
+
+  const [splineOpacity, setSplineOpacity] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("ft_spline_opacity");
+      return saved ? Number(saved) : 85;
+    } catch {
+      return 85;
+    }
+  });
+
+  const handleToggleSpline = (enabled: boolean) => {
+    setSplineEnabled(enabled);
+    try {
+      localStorage.setItem("ft_spline_enabled", String(enabled));
+    } catch {}
+  };
+
+  const handleChangeSplineOpacity = (opacity: number) => {
+    setSplineOpacity(opacity);
+    try {
+      localStorage.setItem("ft_spline_opacity", String(opacity));
+    } catch {}
+  };
+
   const [config, setConfig] = useState<TimerConfig>(() => loadConfig());
   const [earnedBadges, setEarnedBadges] = useState<string[]>(() => loadBadges());
   const [newBadge, setNewBadge] = useState<string | null>(null);
-  const [focusGoal, setFocusGoal] = useState(() => localStorage.getItem(LS.focusGoal) || "");
   const { sessions: historyRaw = [], createSession, updateSession, clearSessions } = useSessions();
+  const { user } = useAuth();
 
-  // DERIVED DATA: Calculate from actual session history
   const history = historyRaw;
   const streak = useMemo(() => deriveStreak(historyRaw), [historyRaw]);
 
@@ -267,8 +289,17 @@ export default function PomodoroApp() {
     };
   }, [historyRaw]);
 
-  const displayTotalSessions = useMemo(() => {
-    return historyRaw.filter((r: any) => r.type === "work" || r.type === "focus").length;
+  const weeklyStats = useMemo(() => {
+    const sevenDaysAgo = subDays(new Date(), 7).getTime();
+    const workSessions = historyRaw.filter((r: any) => {
+      const isFocus = r.type === "work" || r.type === "focus";
+      const sessionTime = new Date(r.startTime).getTime();
+      return isFocus && sessionTime >= sevenDaysAgo;
+    });
+    return {
+      pomodoros: workSessions.length,
+      mins: workSessions.reduce((acc: number, r: any) => acc + Math.floor(r.duration / 60), 0)
+    };
   }, [historyRaw]);
 
   const displayTotalMins = useMemo(() => {
@@ -289,7 +320,7 @@ export default function PomodoroApp() {
       });
     }
   };
-  const { logoutMutation, user } = useAuth();
+
   const [completedCount, setCompletedCount] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const currentSessionDurationRef = useRef(0);
@@ -316,7 +347,7 @@ export default function PomodoroApp() {
 
   const handleStart = useCallback(() => {
     if (!sessionTrueStartRef.current) sessionTrueStartRef.current = new Date().toISOString();
-    lastDateRef.current = todayStr(); // Fresh date on start
+    lastDateRef.current = todayStr();
     setTimerData(p => ({ ...p, state: "running" }));
     if (config.soundEnabled) {
       playClockSound("start");
@@ -361,11 +392,9 @@ export default function PomodoroApp() {
 
   useEffect(() => { autoStartRef.current = config.autoStart; }, [config.autoStart]);
   useEffect(() => { document.documentElement.classList.add("dark"); }, []);
-  useEffect(() => { localStorage.setItem(LS.focusGoal, focusGoal); }, [focusGoal]);
   useEffect(() => { localStorage.setItem(LS.config, JSON.stringify(config)); }, [config]);
   useEffect(() => { if (config.notificationsEnabled) requestNotificationPermission(); }, [config.notificationsEnabled]);
 
-  // Audio Context unlock on first interaction
   useEffect(() => {
     const unlock = () => { getAudioCtx(); window.removeEventListener("mousedown", unlock); };
     window.addEventListener("mousedown", unlock);
@@ -413,16 +442,13 @@ export default function PomodoroApp() {
 
   const handleMidnightSplit = useCallback(async (type: SessionType) => {
     const today = todayStr();
-    if (lastDateRef.current === today) return; // Already split
+    if (lastDateRef.current === today) return;
     
-    console.log("[Midnight] Date changed, splitting session...");
     const oldId = currentSessionId;
     const oldDuration = currentSessionDurationRef.current;
     
-    // Mark as split immediately
     lastDateRef.current = today;
     
-    // 1. Sync current accumulation to the old session and mark it as completed for that day
     if (oldId) {
       try {
         await updateSession.mutateAsync({
@@ -434,7 +460,6 @@ export default function PomodoroApp() {
       }
     }
     
-    // 2. Reset for new day
     setCurrentSessionId(null);
     currentSessionDurationRef.current = 0;
     syncTimerRef.current = 0;
@@ -455,13 +480,8 @@ export default function PomodoroApp() {
       nextDuration = isLong ? cfg.longBreakDuration : cfg.shortBreakDuration;
 
       if (completed) {
-        const durationMins = Math.floor(cfg.workDuration / 60);
-        
-        // Sync final state of the session
         syncCurrentSession("work", true);
-
         setCompletedCount(c => c + 1);
-
         if (cfg.soundEnabled) playBeep("work");
         if (cfg.notificationsEnabled) sendNotification("Focus session complete!", isLong ? "Time for a long break." : "Take a short break.");
         toast({ title: "Focus session complete", description: isLong ? "Next: Long break" : "Next: Short break" });
@@ -471,9 +491,7 @@ export default function PomodoroApp() {
       nextSession = "work";
       nextDuration = cfg.workDuration;
       if (completed) {
-        // Sync final state of the break
         syncCurrentSession(current.currentSession, true);
-
         if (cfg.soundEnabled) playBeep("break");
         if (cfg.notificationsEnabled) sendNotification("Break over!", "Ready to focus again?");
         toast({ title: "Break complete", description: "Next: Focus session" });
@@ -481,7 +499,6 @@ export default function PomodoroApp() {
       }
     }
 
-    // Reset real-time tracking for the next session
     setCurrentSessionId(null);
     currentSessionDurationRef.current = 0;
     syncTimerRef.current = 0;
@@ -503,12 +520,10 @@ export default function PomodoroApp() {
     const payload = { timeRemaining: nextDuration, totalTime: nextDuration, currentSession: nextSession, sessionsCompleted: nextSessions, state: nextState };
     setTimerData(payload);
 
-    // Broadcast the major state change immediately to prevent sync lag
     if (channelRef.current) {
       channelRef.current.postMessage({ type: "STATE_UPDATE", payload: { ...payload, skipAudio: true } });
     }
 
-    // Guard reset
     setTimeout(() => { transitioningRef.current = false; }, 800);
   }, [createSession, toast]);
 
@@ -516,7 +531,6 @@ export default function PomodoroApp() {
     if (timerData.state === "running") {
       if (!sessionStartRef.current) sessionStartRef.current = nowTime();
 
-      // Calculate the absolute end time if it's not already set
       if (expectedEndTimeRef.current === null) {
         expectedEndTimeRef.current = Date.now() + (timerData.timeRemaining * 1000);
       }
@@ -525,7 +539,6 @@ export default function PomodoroApp() {
         const now = Date.now();
         const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current! - now) / 1000));
 
-        // Real-time tracking logic
         const prevRemaining = timerDataRef.current.timeRemaining;
         if (remaining !== prevRemaining) {
           const elapsed = Math.max(0, prevRemaining - remaining);
@@ -533,13 +546,11 @@ export default function PomodoroApp() {
             currentSessionDurationRef.current += elapsed;
             syncTimerRef.current += elapsed;
 
-            // Check for midnight split
             const today = todayStr();
             if (lastDateRef.current !== today) {
               handleMidnightSplit(timerDataRef.current.currentSession);
             }
 
-            // Periodic sync (every 30 seconds)
             if (syncTimerRef.current >= 30) {
               syncCurrentSession(timerDataRef.current.currentSession);
             }
@@ -563,7 +574,6 @@ export default function PomodoroApp() {
       intervalRef.current = timerId;
       return () => clearInterval(timerId);
     } else {
-      // Clear tracking refs when not running
       expectedEndTimeRef.current = null;
       if (timerData.state === "idle") sessionStartRef.current = "";
     }
@@ -615,33 +625,54 @@ export default function PomodoroApp() {
   };
 
   const closeCompletion = () => setSessionCompleted(null);
-
-  const cycle = Math.floor(timerData.sessionsCompleted / config.sessionsUntilLongBreak) + 1;
   const hasHistory = history.length > 0;
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#07070f" }}>
+    <div className="flex h-screen w-screen overflow-hidden bg-[#07070f] text-white relative">
+      {/* 3D Spline Backlight Background */}
+      <SplineBackground enabled={splineEnabled} opacity={splineOpacity} />
+
+      {/* Subtle Background Glow */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
         background: `
-          radial-gradient(ellipse 55% 35% at 15% 85%, rgba(255,255,255,0.012) 0%, transparent 60%),
-          radial-gradient(ellipse 45% 30% at 85% 15%, rgba(255,255,255,0.009) 0%, transparent 60%)
+          radial-gradient(ellipse 50% 40% at 50% 40%, rgba(245, 166, 35, 0.03) 0%, transparent 70%),
+          radial-gradient(ellipse 60% 50% at 20% 80%, rgba(15, 16, 26, 0.8) 0%, transparent 100%)
         `,
       }} />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-3 animate-fade-in-down" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div>
-          <h1 className="text-sm font-semibold tracking-[0.3em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>Focus Timer</h1>
-          <p className="text-xs tracking-[0.22em] uppercase mt-0.5" style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.4)" }}>Pomodoro</p>
+      {/* LEFT ICON SIDEBAR */}
+      <aside className="w-16 md:w-20 bg-[#0c0d14]/90 backdrop-blur-xl border-r border-[#1e1f2b] flex flex-col items-center py-6 gap-6 z-20 flex-shrink-0 select-none">
+        {/* Brand / Logo */}
+        <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(245,166,35,0.2)]">
+          <Flame className="w-5 h-5 text-amber-500 fill-amber-500/20" />
         </div>
-        <div className="flex items-center gap-2.5">
-          <a href="/docs.html" target="_blank" rel="noreferrer" className="flex items-center justify-center w-9 h-9 rounded-full transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }} title="View Documentation">
-            <Book className="w-4 h-4" />
-          </a>
-          <HBtn onClick={() => setShowAnalytics(true)} testId="button-analytics"><BarChart3 className="w-4 h-4" /></HBtn>
-          <HBtn onClick={() => setShowSettings(true)} testId="button-settings-header"><Settings className="w-4 h-4" /></HBtn>
-          <HBtn onClick={() => setShowSidebar(true)} testId="button-sidebar" highlighted><Flame className="w-4 h-4" /></HBtn>
-          <button
+
+        <div className="w-8 h-[1px] bg-[#1e1f2b] my-1" />
+
+        {/* Navigation Items */}
+        <div className="flex flex-col items-center gap-4 flex-1">
+          <NavIconButton onClick={() => setShowSidebar(true)} active={showSidebar} tooltip="Streaks & Progress" testId="button-sidebar">
+            <Flame className="w-5 h-5" />
+          </NavIconButton>
+
+          <NavIconButton onClick={() => setShowAnalytics(true)} active={showAnalytics} tooltip="Analytics & History" testId="button-analytics">
+            <BarChart3 className="w-5 h-5" />
+          </NavIconButton>
+
+          <NavIconButton onClick={() => setShowSettings(true)} active={showSettings} tooltip="Timer Settings" testId="button-settings-header">
+            <Settings className="w-5 h-5" />
+          </NavIconButton>
+
+          {/* 3D Spline Backlight Controls Button */}
+          <SplineControls
+            enabled={splineEnabled}
+            onToggleEnabled={handleToggleSpline}
+            opacity={splineOpacity}
+            onChangeOpacity={handleChangeSplineOpacity}
+          />
+
+          <NavIconButton 
             onClick={() => {
               const w = 320;
               const h = 380;
@@ -649,93 +680,167 @@ export default function PomodoroApp() {
               const top = (window.screen.height / 2) - (h / 2);
               window.open("/mini", "PomoTimer", `width=${w},height=${h},left=${left},top=${top},resizable=no,scrollbars=no,status=no,location=no,toolbar=no,menubar=no`);
             }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:bg-white/10"
-            style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
-            title="Open Mini Window"
+            tooltip="Open Mini Window"
           >
-            <div className="w-4 h-4 border-2 border-current rounded-sm flex items-center justify-center">
-              <div className="w-1.5 h-1.5 bg-current rounded-full animate-pulse" />
-            </div>
-          </button>
-          <button onClick={() => setShowProfile(true)} className="w-9 h-9 ml-2 rounded-full flex items-center justify-center transition-all hover:bg-white/10" style={{ border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}>
-            <UserIcon className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
+            <Monitor className="w-5 h-5" />
+          </NavIconButton>
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-between px-6 py-5 max-w-5xl mx-auto w-full gap-4">
-        <div className="w-full flex flex-col items-center gap-4">
-          <div className="flex gap-1 p-1 rounded-full animate-fade-in-down delay-100" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <a href="/docs.html" target="_blank" rel="noreferrer" className="w-11 h-11 rounded-2xl flex items-center justify-center text-white/50 bg-white/[0.04] border border-white/[0.08] hover:text-white transition-all">
+            <Book className="w-5 h-5" />
+          </a>
+        </div>
+
+        {/* Bottom Profile Button */}
+        <NavIconButton onClick={() => setShowProfile(true)} active={showProfile} tooltip={user ? user.email : "Account"}>
+          <UserIcon className="w-5 h-5" />
+        </NavIconButton>
+      </aside>
+
+      {/* MAIN DASHBOARD CONTENT AREA */}
+      <main className="flex-1 flex flex-col overflow-y-auto px-4 md:px-8 py-6 gap-6 relative z-10 custom-scrollbar max-w-7xl mx-auto w-full">
+        {/* TOP BAR / DASHBOARD HEADER */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#1e1f2b]">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                {timerData.currentSession === "work" ? "FOCUS MODE" : timerData.currentSession === "short-break" ? "SHORT BREAK" : "LONG BREAK"}
+              </span>
+              {timerData.state === "running" && (
+                <span className="flex items-center gap-1.5 text-xs text-amber-400 font-medium animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" /> Live
+                </span>
+              )}
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white/95 mt-1 font-sans">
+              Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}
+            </h1>
+          </div>
+
+          {/* Quick Header Widget Cards */}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* TODAY'S GOAL WIDGET CARD */}
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#0f1019]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                <Target className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Today's Goal</div>
+                <div className="text-xs font-semibold text-white/90">
+                  {todayStats.sessions} / 8 <span className="text-white/40 font-normal">Pomodoros</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CURRENT SESSION WIDGET CARD */}
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#0f1019]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Current Session</div>
+                <div className="text-xs font-semibold text-white/90">
+                  #{ (timerData.sessionsCompleted % config.sessionsUntilLongBreak) + 1 } of {config.sessionsUntilLongBreak}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* CENTER MAIN CONTENT: TIMER & CONTROLS */}
+        <section className="flex-1 flex flex-col items-center justify-center gap-6 py-2">
+          {/* SESSION MODE TAB SWITCHER */}
+          <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
             {SESSION_TABS.map(({ key, label }) => {
               const active = timerData.currentSession === key;
               return (
-                <button key={key} onClick={() => switchSession(key)} data-testid={`button-session-${key}`}
-                  className="px-4 py-2 rounded-full transition-all duration-200"
-                  style={{
-                    fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, fontSize: "12px", letterSpacing: "0.12em",
-                    color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.45)",
-                    background: active ? "rgba(255,255,255,0.12)" : "transparent",
-                    border: active ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent",
-                  }}>
-                  {label.toUpperCase()}
+                <button
+                  key={key}
+                  onClick={() => switchSession(key)}
+                  data-testid={`button-session-${key}`}
+                  className={`px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                    active
+                      ? "bg-amber-500 text-black shadow-[0_0_15px_rgba(245,166,35,0.4)]"
+                      : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  {label}
                 </button>
               );
             })}
           </div>
 
-          <FocusGoal value={focusGoal} onChange={setFocusGoal} />
-        </div>
-
-        <div className="w-full grid place-items-center gap-4">
-          <div className="animate-scale-in delay-200">
-            <Timer timeRemaining={timerData.timeRemaining} totalTime={timerData.totalTime} currentSession={timerData.currentSession} state={timerData.state} />
-          </div>
-          <div className="w-full max-w-md transition-all duration-500" style={{ opacity: timerData.state === "running" ? 1 : 0.4 }}>
-            <QuoteDisplay running={timerData.state === "running"} sessionIndex={completedCount} />
-          </div>
-        </div>
-
-        <div className="w-full flex flex-col items-center gap-3">
-          <div className="animate-fade-in-up delay-300">
-            <ControlButtons state={timerData.state} onStart={handleStart} onPause={handlePause} onStop={handleStop} onReset={handleReset} onSettings={() => setShowSettings(true)} />
+          {/* LARGE AMBER TIMER DISPLAY */}
+          <div className="relative my-2">
+            <Timer 
+              timeRemaining={timerData.timeRemaining} 
+              totalTime={timerData.totalTime} 
+              currentSession={timerData.currentSession} 
+              state={timerData.state}
+              sessionsCompleted={timerData.sessionsCompleted}
+              sessionsUntilLongBreak={config.sessionsUntilLongBreak}
+            />
           </div>
 
-          <SessionStats sessionsCompleted={todayStats.sessions} currentCycle={cycle} totalCycles={config.sessionsUntilLongBreak} timeSpentToday={todayStats.mins} className="w-full max-w-3xl" />
+          {/* PILL CONTROL BUTTONS */}
+          <ControlButtons 
+            state={timerData.state} 
+            onStart={handleStart} 
+            onPause={handlePause} 
+            onStop={handleStop} 
+            onReset={handleReset}
+            onSkip={() => skipToNext(timerDataRef.current, config, false)}
+            onSettings={() => setShowSettings(true)}
+          />
+        </section>
 
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            {[["Space", "Play/Pause"], ["R", "Reset"], ["N", "Skip"]].map(([key, label]) => (
-              <div key={key} className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 rounded text-xs" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>{key}</kbd>
-                <span style={{ fontSize: "10px", fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.28)" }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* BOTTOM DASHBOARD STAT CARDS GRID */}
+        <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pb-4">
+          <StreakCounter 
+            currentStreak={streak.current} 
+            longestStreak={streak.best} 
+            todaySessions={todayStats.sessions}
+            dailyGoal={8}
+          />
+          <SessionStats 
+            sessionsCompleted={todayStats.sessions}
+            currentCycle={(timerData.sessionsCompleted % config.sessionsUntilLongBreak) + 1}
+            totalCycles={config.sessionsUntilLongBreak}
+            timeSpentToday={todayStats.mins}
+            weeklyMinutes={weeklyStats.mins}
+            weeklyPomodoros={weeklyStats.pomodoros}
+          />
+          <DailyProgress 
+            completed={todayStats.sessions} 
+            goal={8} 
+          />
+        </section>
       </main>
 
+      {/* BADGE UNLOCK POPUP */}
       {newBadge && (() => {
         const b = BADGE_MILESTONES.find(x => x.id === newBadge);
         if (!b) return null;
         return (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-badge-unlock" style={{ pointerEvents: "none" }}>
-            <div className="px-6 py-3 rounded-full flex items-center gap-3" style={{ background: "rgba(8,8,18,0.97)", border: `1px solid ${b.glow}`, boxShadow: `0 0 24px ${b.glow}`, backdropFilter: "blur(20px)" }}>
-              <div className="w-2 h-2 rounded-full" style={{ background: b.color }} />
-              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 600, fontSize: 13, letterSpacing: "0.14em", color: b.color }}>{b.name} UNLOCKED</span>
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-badge-unlock pointer-events-none">
+            <div className="px-6 py-3 rounded-full flex items-center gap-3 bg-[#0c0d14] border border-amber-500/50 shadow-[0_0_24px_rgba(245,166,35,0.4)] backdrop-blur-xl">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="font-semibold text-xs tracking-wider uppercase text-amber-400">{b.name} UNLOCKED</span>
             </div>
           </div>
         );
       })()}
 
+      {/* DRAWERS & MODALS */}
       <Sheet open={showSidebar} onOpenChange={setShowSidebar}>
-        <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col overflow-hidden border-none p-0" style={{ background: "rgba(5,5,14,0.92)", backdropFilter: "blur(48px)", WebkitBackdropFilter: "blur(48px)", borderLeft: "1px solid rgba(255,255,255,0.1)", boxShadow: "-24px 0 64px rgba(0,0,0,0.7)" }}>
+        <SheetContent side="right" className="w-full sm:w-[400px] flex flex-col overflow-hidden border-none p-0 bg-[#07070f]/95 backdrop-blur-2xl border-l border-[#1e1f2b] shadow-2xl">
           <SheetTitle className="sr-only">Progress — Streaks & Achievements</SheetTitle>
           <SheetDescription className="sr-only">View your focus streaks, achievement badges, and session history.</SheetDescription>
-          <div className="px-6 pt-8 pb-5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-sm font-semibold tracking-[0.3em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>Progress</h2>
-            <p className="text-xs tracking-[0.18em] uppercase mt-1" style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Streaks & Achievements</p>
-            <div className="flex gap-1 mt-4 p-1 rounded-full" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
+          <div className="px-6 pt-8 pb-5 flex-shrink-0 border-b border-[#1e1f2b]">
+            <h2 className="text-sm font-semibold tracking-[0.3em] uppercase text-white/95" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Progress</h2>
+            <p className="text-xs tracking-[0.18em] uppercase mt-1 text-white/45" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Streaks & Achievements</p>
+            <div className="flex gap-1 mt-4 p-1 rounded-full bg-white/[0.05] border border-white/[0.09]">
               <SidebarTab active={sidebarTab === "progress"} onClick={() => setSidebarTab("progress")}>Progress</SidebarTab>
-              <SidebarTab active={sidebarTab === "history"} onClick={() => setSidebarTab("history")}>History{hasHistory && <span className="ml-1 px-1.5 py-0.5 rounded-full" style={{ fontSize: "9px", background: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.75)" }}>{history.filter((r: any) => r.type === "work").length}</span>}</SidebarTab>
+              <SidebarTab active={sidebarTab === "history"} onClick={() => setSidebarTab("history")}>History{hasHistory && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] bg-white/10 text-white/75">{history.filter((r: any) => r.type === "work").length}</span>}</SidebarTab>
             </div>
           </div>
 
@@ -744,11 +849,11 @@ export default function PomodoroApp() {
               <>
                 <div className="space-y-3">
                   <SLabel>All-Time Focus</SLabel>
-                  <div className="text-center py-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <div className="text-4xl font-light" style={{ fontFamily: "'JetBrains Mono',monospace", color: "rgba(255,255,255,0.96)" }}>
+                  <div className="text-center py-6 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+                    <div className="text-4xl font-light font-mono text-white/95">
                       {displayTotalMins >= 60 ? `${Math.floor(displayTotalMins / 60)}h ${displayTotalMins % 60}m` : `${displayTotalMins} min`}
                     </div>
-                    <div className="text-xs font-semibold tracking-[0.22em] uppercase mt-2" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.5)" }}>Total Focused</div>
+                    <div className="text-xs font-semibold tracking-[0.22em] uppercase mt-2 text-white/50" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Total Focused</div>
                   </div>
                 </div>
 
@@ -759,14 +864,14 @@ export default function PomodoroApp() {
 
                 <div className="space-y-3">
                   <SLabel>Activity — Last 7 Weeks</SLabel>
-                  <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.08]">
                     <WeeklyHeatmap history={history} />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <SLabel>Achievement Badges</SLabel>
-                  <p className="text-xs leading-relaxed" style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Tap an unlocked badge to view and download it.</p>
+                  <p className="text-xs leading-relaxed text-white/45">Tap an unlocked badge to view and download it.</p>
                   <Badges totalMinutes={displayTotalMins} earnedBadgeIds={earnedBadges} newlyUnlocked={newBadge} />
                 </div>
               </>
@@ -782,45 +887,63 @@ export default function PomodoroApp() {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={showAnalytics} onOpenChange={setShowAnalytics}>
-        <SheetContent side="right" className="w-full sm:w-[420px] flex flex-col overflow-hidden border-none p-0" style={{ background: "rgba(5,5,14,0.94)", backdropFilter: "blur(48px)", WebkitBackdropFilter: "blur(48px)", borderLeft: "1px solid rgba(255,255,255,0.1)", boxShadow: "-24px 0 64px rgba(0,0,0,0.7)" }}>
-          <SheetTitle className="sr-only">Analytics — Productivity Overview</SheetTitle>
-          <SheetDescription className="sr-only">Focus session analytics and productivity trends.</SheetDescription>
-          <div className="px-6 pt-8 pb-5 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-sm font-semibold tracking-[0.3em] uppercase" style={{ fontFamily: "'Rajdhani',sans-serif", color: "rgba(255,255,255,0.92)" }}>Analytics</h2>
-            <p className="text-xs tracking-[0.18em] uppercase mt-1" style={{ fontFamily: "'Rajdhani',sans-serif", fontWeight: 400, color: "rgba(255,255,255,0.45)" }}>Productivity Overview</p>
+      {showAnalytics && (
+        <div className="fixed inset-0 z-50 bg-[#07090e] text-white flex flex-col overflow-y-auto animate-fade-in custom-scrollbar">
+          {/* Top Bar for Full-Screen Analytics */}
+          <div className="sticky top-0 z-30 bg-[#07090e]/90 backdrop-blur-xl border-b border-[#1e293b] px-6 md:px-12 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold tracking-wider uppercase text-emerald-400" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Analytics & Reports</h2>
+                <p className="text-xs text-white/40 font-sans">PRODUCTIVE+ Productivity Intelligence</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowAnalytics(false)}
+              className="w-10 h-10 rounded-full bg-white/[0.05] border border-white/10 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all active:scale-95 cursor-pointer"
+              title="Close Analytics (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6 no-scrollbar"><Analytics /></div>
-        </SheetContent>
-      </Sheet>
+
+          {/* Full Screen Analytics Dashboard Content */}
+          <div className="max-w-7xl mx-auto w-full p-6 md:p-10 flex-1">
+            <Analytics />
+          </div>
+        </div>
+      )}
 
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
           <div className="animate-scale-in"><SettingsPanel config={config} onSave={handleSaveSettings} onClose={() => setShowSettings(false)} /></div>
         </div>
       )}
 
       {showProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)" }} onClick={(e) => { if (e.target === e.currentTarget) setShowProfile(false); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={(e) => { if (e.target === e.currentTarget) setShowProfile(false); }}>
           <div className="animate-scale-in w-full max-w-sm flex items-center justify-center"><ProfilePanel onClose={() => setShowProfile(false)} /></div>
         </div>
       )}
 
       {sessionCompleted && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}>
-          <div className="animate-scale-in w-full max-w-sm p-8 rounded-3xl text-center space-y-6" style={{ background: "rgba(12,12,24,0.95)", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
-            <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: sessionCompleted.type === "work" ? "rgba(255,255,255,0.8)" : "rgba(100,210,170,0.8)" }} />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
+          <div className="animate-scale-in w-full max-w-sm p-8 rounded-3xl text-center space-y-6 bg-[#0c0d14] border border-amber-500/30 shadow-2xl">
+            <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-amber-500/10 border border-amber-500/30">
+              <CheckCircle2 className="w-10 h-10 text-amber-500 animate-bounce" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk',sans-serif", color: "rgba(255,255,255,0.95)" }}>
+              <h3 className="text-xl font-bold text-white/95">
                 {sessionCompleted.type === "work" ? "Focus Session Complete" : "Break Session Complete"}
               </h3>
-              <p className="text-sm mt-2 font-medium" style={{ fontFamily: "'Rajdhani',sans-serif", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)" }}>
+              <p className="text-xs mt-2 font-semibold tracking-wider text-amber-400 uppercase">
                 NEXT: {sessionCompleted.next === "work" ? "FOCUS SESSION" : sessionCompleted.next === "short-break" ? "SHORT BREAK" : "LONG BREAK"}
               </p>
             </div>
-            <button onClick={closeCompletion} className="w-full py-4 rounded-2xl font-semibold transition-all active:scale-95 hover:brightness-110" style={{ background: "rgba(255,255,255,0.95)", color: "#050508", fontFamily: "'Space Grotesk',sans-serif" }}>
+            <button onClick={closeCompletion} className="w-full py-3.5 rounded-2xl font-bold bg-amber-500 hover:bg-amber-400 text-black transition-all active:scale-95">
               Got it
             </button>
           </div>
@@ -829,3 +952,4 @@ export default function PomodoroApp() {
     </div>
   );
 }
+

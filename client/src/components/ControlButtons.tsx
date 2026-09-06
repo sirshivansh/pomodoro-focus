@@ -1,4 +1,4 @@
-import { Play, Pause, Square, RotateCcw } from "lucide-react";
+import { Play, Pause, SkipForward } from "lucide-react";
 import { TimerState } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
@@ -8,82 +8,87 @@ interface ControlButtonsProps {
   onPause: () => void;
   onStop: () => void;
   onReset: () => void;
+  onSkip?: () => void;
   onSettings: () => void;
   className?: string;
 }
 
-const GlassBtn = ({
-  onClick,
-  children,
-  large = false,
-  bright = false,
-  disabled = false,
-  "data-testid": testId,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-  large?: boolean;
-  bright?: boolean;
-  disabled?: boolean;
-  "data-testid"?: string;
-}) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    data-testid={testId}
-    className={cn(
-      "rounded-full flex items-center justify-center transition-all duration-200",
-      "active:scale-95",
-      disabled && "opacity-30 cursor-not-allowed",
-      large ? "w-16 h-16" : "w-12 h-12"
-    )}
-    style={{
-      background: bright
-        ? "rgba(255,255,255,0.12)"
-        : "rgba(255,255,255,0.05)",
-      border: `1px solid ${bright ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)"}`,
-      backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
-      boxShadow: bright
-        ? "0 0 20px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)"
-        : "inset 0 1px 0 rgba(255,255,255,0.08)",
-    }}
-  >
-    {children}
-  </button>
-);
-
 export default function ControlButtons({
-  state, onStart, onPause, onStop, onReset, onSettings, className,
+  state, onStart, onPause, onStop, onReset, onSkip, onSettings, className,
 }: ControlButtonsProps) {
+  const isRunning = state === "running";
+  const isIdle = state === "idle";
+
   return (
-    <div className={cn("flex items-center justify-center gap-5", className)}>
-      {/* Stop */}
-      <GlassBtn onClick={onStop} disabled={state === "idle"} data-testid="button-stop">
-        <Square
-          className="w-4 h-4 fill-current"
-          style={{ color: "rgba(255,255,255,0.55)" }}
-        />
-      </GlassBtn>
-
-      {/* Play / Pause — main action */}
-      <GlassBtn
-        onClick={state === "running" ? onPause : onStart}
-        large
-        bright
-        data-testid={state === "running" ? "button-pause" : "button-start"}
+    <div className={cn("flex items-center justify-center gap-4", className)}>
+      {/* START / PAUSE button */}
+      <button
+        onClick={isRunning ? onPause : onStart}
+        data-testid={isRunning ? "button-pause" : "button-start"}
+        className="flex items-center gap-2.5 px-8 py-3 rounded-full transition-all duration-300 active:scale-95 hover:brightness-110"
+        style={{
+          background: isRunning
+            ? "transparent"
+            : "linear-gradient(135deg, #f5a623 0%, #e8941a 100%)",
+          border: isRunning
+            ? "1.5px solid rgba(245,166,35,0.5)"
+            : "1.5px solid rgba(245,166,35,0.8)",
+          color: isRunning ? "#f5a623" : "#0a0a12",
+          boxShadow: isRunning
+            ? "none"
+            : "0 4px 20px rgba(245,166,35,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+          fontFamily: "'Rajdhani',sans-serif",
+          fontWeight: 700,
+          fontSize: "14px",
+          letterSpacing: "0.15em",
+        }}
       >
-        {state === "running" ? (
-          <Pause className="w-6 h-6" style={{ color: "rgba(255,255,255,0.95)" }} />
+        {isRunning ? (
+          <Pause className="w-4 h-4" />
         ) : (
-          <Play className="w-6 h-6 translate-x-0.5" style={{ color: "rgba(255,255,255,0.95)" }} />
+          <Play className="w-4 h-4 translate-x-0.5" />
         )}
-      </GlassBtn>
+        {isRunning ? "PAUSE" : "START"}
+      </button>
 
-      {/* Reset */}
-      <GlassBtn onClick={onReset} data-testid="button-reset">
-        <RotateCcw className="w-4 h-4" style={{ color: "rgba(255,255,255,0.55)" }} />
-      </GlassBtn>
+      {/* STOP button (only when running or paused) */}
+      {!isIdle && (
+        <button
+          onClick={onStop}
+          data-testid="button-stop"
+          className="flex items-center gap-2.5 px-6 py-3 rounded-full transition-all duration-300 active:scale-95 hover:border-amber-400/60"
+          style={{
+            background: "transparent",
+            border: "1.5px solid rgba(255,255,255,0.15)",
+            color: "rgba(255,255,255,0.65)",
+            fontFamily: "'Rajdhani',sans-serif",
+            fontWeight: 700,
+            fontSize: "14px",
+            letterSpacing: "0.15em",
+          }}
+        >
+          STOP
+        </button>
+      )}
+
+      {/* SKIP button */}
+      <button
+        onClick={onSkip || (() => {})}
+        data-testid="button-skip"
+        className="flex items-center gap-2.5 px-6 py-3 rounded-full transition-all duration-300 active:scale-95 hover:border-amber-400/40"
+        style={{
+          background: "transparent",
+          border: "1.5px solid rgba(255,255,255,0.15)",
+          color: "rgba(245,166,35,0.75)",
+          fontFamily: "'Rajdhani',sans-serif",
+          fontWeight: 700,
+          fontSize: "14px",
+          letterSpacing: "0.15em",
+        }}
+      >
+        <SkipForward className="w-4 h-4" />
+        SKIP
+      </button>
     </div>
   );
 }

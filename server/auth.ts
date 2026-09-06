@@ -7,11 +7,14 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
+import MemoryStoreFactory from "memorystore";
 import pg from "pg";
 import { db } from "./db";
+import { sendPasswordResetEmail } from "./email";
 
 const scryptAsync = promisify(scrypt);
 const PostgresStore = connectPg(session);
+const MemoryStore = MemoryStoreFactory(session);
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -27,13 +30,25 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const pool = pg.Pool; // connect-pg-simple requires a raw pg pool if not passing db promise directly
-  const store = new PostgresStore({
-    conObject: {
-      connectionString: process.env.DATABASE_URL,
-    },
-    createTableIfMissing: true,
-  });
+  let store: any;
+  try {
+    if (process.env.DATABASE_URL && process.env.NODE_ENV === "production") {
+      store = new PostgresStore({
+        conObject: {
+          connectionString: process.env.DATABASE_URL,
+        },
+        createTableIfMissing: true,
+      });
+    } else {
+      store = new MemoryStore({ checkPeriod: 86400000 });
+    }
+  } catch (e) {
+    store = new MemoryStore({ checkPeriod: 86400000 });
+  }
+
+  if (!store) {
+    store = new MemoryStore({ checkPeriod: 86400000 });
+  }
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "pomodoro_secret",
@@ -120,5 +135,70 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as SelectUser;
     res.json({ id: user.id, email: user.email });
+  });
+
+  app.post("/api/forgot-password", async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      console.log(`[AUTH API] Forgot password request received for: "${email}"`);
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      console.log(`[AUTH API] User lookup result:`, user ? `Found user (id: ${user.id}, email: ${user.email})` : "User NOT FOUND");
+
+      if (!user) {
+        return res.status(200).json({ 
+          message: "If an account exists with that email, a password reset code has been sent to your inbox."
+        });
+      }
+
+      const token = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await storage.setResetToken(user.email, token, expiry);
+      console.log(`[AUTH API] Set reset token "${token}" for email "${user.email}"`);
+
+      // Send email safely
+      console.log(`[AUTH API] Triggering sendPasswordResetEmail...`);
+      const sent = await sendPasswordResetEmail(user.email, token);
+      console.log(`[AUTH API] sendPasswordResetEmail completed with status: ${sent}`);
+
+      // Return sanitized response with NO sensitive reset token in JSON
+      res.status(200).json({
+        message: "If an account exists with that email, a password reset code has been sent to your inbox."
+      });
+    } catch (err) {
+      console.error(`[AUTH API ERROR]:`, err);
+      next(err);
+    }
+  });
+
+  app.post("/api/reset-password", async (req, res, next) => {
+    try {
+      const { token, newPassword } = req.body;
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Reset code and new password are required" });
+      }
+
+      const user = await storage.getUserByResetToken(token);
+      if (!user || !user.resetTokenExpiry) {
+        return res.status(400).json({ message: "Invalid reset code" });
+      }
+
+      if (new Date() > new Date(user.resetTokenExpiry)) {
+        return res.status(400).json({ message: "Reset code has expired" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updatePassword(user.id, hashedPassword);
+
+      console.log(`[AUTH] Password updated successfully for user ${user.email}`);
+
+      res.status(200).json({ message: "Password updated successfully. You can now sign in." });
+    } catch (err) {
+      next(err);
+    }
   });
 }

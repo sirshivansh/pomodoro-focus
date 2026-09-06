@@ -1,14 +1,25 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Timer, Loader2 } from "lucide-react";
+import { Timer, Loader2, ArrowLeft, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+type AuthMode = "login" | "register" | "forgot" | "reset";
+
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { loginMutation, registerMutation, user } = useAuth();
+  const [token, setToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const { 
+    loginMutation, 
+    registerMutation, 
+    forgotPasswordMutation, 
+    resetPasswordMutation, 
+    user 
+  } = useAuth();
   const [, setLocation] = useLocation();
 
   if (user) {
@@ -18,16 +29,37 @@ export default function AuthPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    
-    if (isLogin) {
+    if (mode === "login") {
+      if (!email || !password) return;
       loginMutation.mutate({ email, password } as any);
-    } else {
+    } else if (mode === "register") {
+      if (!email || !password) return;
       registerMutation.mutate({ email, password } as any);
+    } else if (mode === "forgot") {
+      if (!email) return;
+      forgotPasswordMutation.mutate({ email }, {
+        onSuccess: () => {
+          setMode("reset");
+        }
+      });
+    } else if (mode === "reset") {
+      if (!token || !newPassword) return;
+      resetPasswordMutation.mutate({ token, newPassword }, {
+        onSuccess: () => {
+          setMode("login");
+          setPassword("");
+          setNewPassword("");
+          setToken("");
+        }
+      });
     }
   };
 
-  const isPending = loginMutation.isPending || registerMutation.isPending;
+  const isPending = 
+    loginMutation.isPending || 
+    registerMutation.isPending || 
+    forgotPasswordMutation.isPending || 
+    resetPasswordMutation.isPending;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#07070f] text-white overflow-hidden">
@@ -69,37 +101,91 @@ export default function AuthPage() {
         <div className="w-full max-w-sm space-y-8 relative z-10">
           <div className="text-center md:text-left space-y-2">
             <h3 className="text-2xl font-light" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
-              {isLogin ? "Welcome back" : "Create an account"}
+              {mode === "login" && "Welcome back"}
+              {mode === "register" && "Create an account"}
+              {mode === "forgot" && "Reset Password"}
+              {mode === "reset" && "Set New Password"}
             </h3>
             <p className="text-white/40 text-sm">
-              {isLogin ? "Enter your details to access your dashboard." : "Start tracking your focus journey today."}
+              {mode === "login" && "Enter your details to access your dashboard."}
+              {mode === "register" && "Start tracking your focus journey today."}
+              {mode === "forgot" && "Enter your registered email to request a reset code."}
+              {mode === "reset" && "Enter your reset code and choose a new password."}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-1.5 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Email Address</label>
-                <Input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. you@example.com"
-                  required
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-1.5 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Password</label>
-                <Input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12"
-                />
-              </div>
+              {(mode === "login" || mode === "register" || mode === "forgot") && (
+                <div>
+                  <label className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-1.5 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Email Address</label>
+                  <Input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. you@example.com"
+                    required
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12"
+                  />
+                </div>
+              )}
+
+              {(mode === "login" || mode === "register") && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold tracking-widest uppercase text-white/50 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Password</label>
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => setMode("forgot")}
+                        className="text-xs text-white/50 hover:text-white/90 transition-colors"
+                        style={{ fontFamily: "'Space Grotesk',sans-serif" }}
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <Input 
+                    type="password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12"
+                  />
+                </div>
+              )}
+
+              {mode === "reset" && (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-1.5 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>Reset Code</label>
+                    <div className="relative">
+                      <Input 
+                        type="text" 
+                        value={token}
+                        onChange={(e) => setToken(e.target.value)}
+                        placeholder="6-digit reset code"
+                        required
+                        className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12 font-mono tracking-wider"
+                      />
+                      <KeyRound className="w-4 h-4 text-white/30 absolute right-3 top-4" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-1.5 block" style={{ fontFamily: "'Rajdhani',sans-serif" }}>New Password</label>
+                    <Input 
+                      type="password" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-white/20 h-12"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <button
@@ -115,19 +201,53 @@ export default function AuthPage() {
                 textTransform: "uppercase"
               }}
             >
-              {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? "Sign In" : "Sign Up")}
+              {isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  {mode === "login" && "Sign In"}
+                  {mode === "register" && "Sign Up"}
+                  {mode === "forgot" && "Send Reset Code"}
+                  {mode === "reset" && "Update Password"}
+                </>
+              )}
             </button>
           </form>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-white/50 hover:text-white transition-colors"
-              style={{ fontFamily: "'Space Grotesk',sans-serif" }}
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
+          <div className="text-center space-y-2">
+            {(mode === "login" || mode === "register") && (
+              <button
+                type="button"
+                onClick={() => setMode(mode === "login" ? "register" : "login")}
+                className="text-sm text-white/50 hover:text-white transition-colors"
+                style={{ fontFamily: "'Space Grotesk',sans-serif" }}
+              >
+                {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            )}
+
+            {(mode === "forgot" || mode === "reset") && (
+              <div className="flex flex-col gap-2">
+                {mode === "forgot" && (
+                  <button
+                    type="button"
+                    onClick={() => setMode("reset")}
+                    className="text-xs text-white/40 hover:text-white transition-colors"
+                    style={{ fontFamily: "'Space Grotesk',sans-serif" }}
+                  >
+                    Already have a reset code? Enter code
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="inline-flex items-center justify-center gap-1 text-sm text-white/50 hover:text-white transition-colors"
+                  style={{ fontFamily: "'Space Grotesk',sans-serif" }}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign in
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

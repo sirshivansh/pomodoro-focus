@@ -11,6 +11,8 @@ type AuthContextType = {
   loginMutation: ReturnType<typeof useLoginMutation>;
   logoutMutation: ReturnType<typeof useLogoutMutation>;
   registerMutation: ReturnType<typeof useRegisterMutation>;
+  forgotPasswordMutation: ReturnType<typeof useForgotPasswordMutation>;
+  resetPasswordMutation: ReturnType<typeof useResetPasswordMutation>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -99,6 +101,54 @@ function useLogoutMutation() {
   });
 }
 
+function useForgotPasswordMutation() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to process request");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Check your inbox", description: data.message || "If an account exists, a reset code has been sent." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Request failed", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+function useResetPasswordMutation() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ token, newPassword }: { token: string; newPassword: string }) => {
+      const res = await fetch("/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to reset password");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Password Reset Complete!", description: data.message });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, error, isLoading } = useQuery<User | null>({
     queryKey: ["/api/user"],
@@ -109,6 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
   const logoutMutation = useLogoutMutation();
+  const forgotPasswordMutation = useForgotPasswordMutation();
+  const resetPasswordMutation = useResetPasswordMutation();
 
   return (
     <AuthContext.Provider
@@ -119,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        forgotPasswordMutation,
+        resetPasswordMutation,
       }}
     >
       {children}
