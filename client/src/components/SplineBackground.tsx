@@ -21,7 +21,9 @@ export default function SplineBackground({
 
   return (
     <div 
-      className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden transition-opacity duration-500 ease-in-out select-none"
+      className={`fixed inset-0 w-full h-full z-0 overflow-hidden transition-opacity duration-500 ease-in-out select-none ${
+        mode === "spline-3d" ? "pointer-events-auto" : "pointer-events-none"
+      }`}
       style={{ opacity: opacityValue }}
       aria-hidden="true"
     >
@@ -55,15 +57,14 @@ export default function SplineBackground({
           <div className="absolute inset-0 bg-gradient-to-t from-[#07070f] via-transparent to-[#07070f] opacity-80 pointer-events-none" />
         </div>
       ) : (
-        /* SPLINE 3D WEBGL IFRAME (NON-BLOCKING POINTER EVENTS) */
+        /* SPLINE 3D WEBGL IFRAME (INTERACTIVE POINTER EVENTS FOR DYNAMIC MOUSE TRACKING) */
         <iframe
           src={SPLINE_SCENE_URL}
           frameBorder="0"
           width="100%"
           height="100%"
-          className="w-full h-full border-0 pointer-events-none scale-105"
+          className="w-full h-full border-0 pointer-events-auto scale-105"
           title="Spline 3D Backlight Effect"
-          loading="lazy"
         />
       )}
 
