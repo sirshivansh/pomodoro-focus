@@ -11,7 +11,7 @@ export const SPLINE_SCENE_URL = "https://my.spline.design/backlightbgeffect-IMEk
 export default function SplineBackground({
   enabled,
   opacity,
-  mode = "gpu-grid",
+  mode = "spline-3d",
 }: SplineBackgroundProps) {
   if (!enabled || opacity <= 0) {
     return null;

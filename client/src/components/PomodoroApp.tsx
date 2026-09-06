@@ -255,9 +255,9 @@ export default function PomodoroApp() {
   const [splineMode, setSplineMode] = useState<"gpu-grid" | "spline-3d">(() => {
     try {
       const saved = localStorage.getItem("ft_spline_mode");
-      return (saved === "spline-3d" ? "spline-3d" : "gpu-grid") as any;
+      return (saved === "gpu-grid" ? "gpu-grid" : "spline-3d") as any;
     } catch {
-      return "gpu-grid";
+      return "spline-3d";
     }
   });
 
@@ -715,9 +715,9 @@ export default function PomodoroApp() {
       </aside>
 
       {/* MAIN DASHBOARD CONTENT AREA */}
-      <main className="flex-1 flex flex-col overflow-y-auto px-4 md:px-8 py-6 gap-6 relative z-10 custom-scrollbar max-w-7xl mx-auto w-full">
+      <main className="flex-1 flex flex-col overflow-y-auto no-scrollbar px-4 md:px-8 py-3 md:py-5 gap-3 md:gap-5 relative z-10 max-w-7xl mx-auto w-full justify-between">
         {/* TOP BAR / DASHBOARD HEADER */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#1e1f2b]">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1e1f2b]/80">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
@@ -765,7 +765,7 @@ export default function PomodoroApp() {
         </header>
 
         {/* CENTER MAIN CONTENT: TIMER & CONTROLS */}
-        <section className="flex-1 flex flex-col items-center justify-center gap-6 py-2">
+        <section className="flex-1 flex flex-col items-center justify-center gap-4 py-1">
           {/* SESSION MODE TAB SWITCHER */}
           <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[#0c0d14]/80 backdrop-blur-md border border-[#1e1f2b]/80 shadow-lg">
             {SESSION_TABS.map(({ key, label }) => {
@@ -788,7 +788,7 @@ export default function PomodoroApp() {
           </div>
 
           {/* LARGE AMBER TIMER DISPLAY */}
-          <div className="relative my-2">
+          <div className="relative my-1">
             <Timer 
               timeRemaining={timerData.timeRemaining} 
               totalTime={timerData.totalTime} 
@@ -812,7 +812,7 @@ export default function PomodoroApp() {
         </section>
 
         {/* BOTTOM DASHBOARD STAT CARDS GRID */}
-        <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pb-4">
+        <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 pb-2">
           <StreakCounter 
             currentStreak={streak.current} 
             longestStreak={streak.best} 
